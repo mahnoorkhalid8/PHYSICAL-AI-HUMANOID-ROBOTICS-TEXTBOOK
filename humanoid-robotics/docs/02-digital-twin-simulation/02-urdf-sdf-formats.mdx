@@ -1,0 +1,155 @@
+---
+id: urdf-sdf-formats
+title: URDF and SDF Formats
+---
+
+# URDF and SDF Formats
+
+Comparing and utilizing URDF and SDF for robot and environment descriptions.
+
+## Introduction to URDF and SDF
+
+URDF (Unified Robot Description Format) and SDF (Simulation Description Format) are XML-based formats used to describe robots and environments in robotics simulation. While URDF is primarily used for robot descriptions in ROS, SDF is used by Gazebo for both robot models and complete simulation environments.
+
+## URDF vs SDF: Key Differences
+
+| Aspect | URDF | SDF |
+|--------|------|-----|
+| Primary Use | Robot description in ROS | Complete simulation environment in Gazebo |
+| Scope | Single robot or robot parts | Entire world with multiple objects |
+| Physics | Basic inertial properties | Full physics engine parameters |
+| Plugins | Limited support | Extensive plugin system |
+| Scene Graph | Robot-specific | Full scene description |
+
+## Sample SDF Snippet for Gravity-Enabled Environment
+
+Here's an SDF snippet defining a gravity-enabled environment with basic physics properties:
+
+```xml
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="humanoid_world">
+    <!-- Physics engine configuration -->
+    <physics type="ode">
+      <gravity>0 0 -9.8</gravity>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000.0</real_time_update_rate>
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>10</iters>
+          <sor>1.0</sor>
+        </solver>
+        <constraints>
+          <cfm>0.0</cfm>
+          <erp>0.2</erp>
+          <contact_max_correcting_vel>100.0</contact_max_correcting_vel>
+          <contact_surface_layer>0.001</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+
+    <!-- Ground plane -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>1.0</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.7 0.7 0.7 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.0 0.0 0.0 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Sample humanoid robot (can be referenced from URDF) -->
+    <include>
+      <uri>model://simple_humanoid</uri>
+      <pose>0 0 1.0 0 0 0</pose>
+    </include>
+
+    <!-- Lighting -->
+    <light name="sun" type="directional">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.4 0.2 -0.9</direction>
+    </light>
+  </world>
+</sdf>
+```
+
+## Converting URDF to SDF for Simulation
+
+When using URDF models in Gazebo, the URDF is automatically converted to SDF. However, you can enhance your robot's simulation by adding Gazebo-specific tags to your URDF:
+
+```xml
+<!-- In your URDF file -->
+<link name="link_name">
+  <!-- ... standard URDF elements ... -->
+
+  <!-- Gazebo-specific properties -->
+  <gazebo reference="link_name">
+    <mu1>0.9</mu1>
+    <mu2>0.9</mu2>
+    <kp>1000000.0</kp>
+    <kd>100.0</kd>
+    <material>Gazebo/Blue</material>
+    <turnGravityOff>false</turnGravityOff>
+  </gazebo>
+</link>
+
+<!-- Adding plugins to joints -->
+<gazebo>
+  <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+    <robotNamespace>/</robotNamespace>
+    <jointName>joint_name</jointName>
+  </plugin>
+</gazebo>
+```
+
+## Best Practices for SDF Environments
+
+1. **Physics Tuning**: Adjust `max_step_size` and `real_time_factor` for stability vs. performance trade-offs
+2. **Gravity Configuration**: Set appropriate gravity vector (typically [0, 0, -9.8] for Earth)
+3. **Collision Properties**: Define proper friction and restitution coefficients
+4. **Performance**: Use simpler collision geometries when possible
+5. **Lighting**: Configure appropriate lighting for visual sensors
+
+## Cross-Module References
+
+For more information about related topics, see:
+- Module 1: URDF Robot Description for Humanoids for robot description formats
+- Module 2: Physics and Sensor Simulation for detailed simulation concepts
+- Module 3: The AI-Robot Brain (NVIDIA Isaac™) for simulation integration

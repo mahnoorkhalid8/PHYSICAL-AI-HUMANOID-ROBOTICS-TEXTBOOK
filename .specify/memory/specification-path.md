@@ -1,0 +1,1 @@
+The authoritative root directory for all Specification artifacts (spec.md, plan.md, tasks.md) is the **specs/** directory, located in the project's root folder, NOT inside .specify/.

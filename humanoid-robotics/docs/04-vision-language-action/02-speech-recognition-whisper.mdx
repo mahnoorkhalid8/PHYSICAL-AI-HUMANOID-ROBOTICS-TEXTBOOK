@@ -1,0 +1,466 @@
+---
+id: speech-recognition-whisper
+title: Speech Recognition with Whisper
+---
+
+# Speech Recognition with Whisper
+
+Utilizing OpenAI's Whisper for robust speech-to-text capabilities in robotics.
+
+## Introduction to Whisper for Robotics
+
+OpenAI's Whisper is a state-of-the-art speech recognition model that provides exceptional accuracy across multiple languages and diverse acoustic conditions. For humanoid robots, Whisper offers robust speech-to-text capabilities that can handle various accents, background noise, and speaking styles, making it ideal for natural human-robot interaction.
+
+## Whisper Architecture and Capabilities
+
+Whisper is built on a Transformer-based architecture with the following key features:
+- Multilingual support (99+ languages)
+- Robust performance in noisy environments
+- Ability to handle various audio qualities and formats
+- Speaker diarization capabilities
+- Timestamp alignment for audio segments
+
+## Python Implementation for Whisper Integration
+
+```python
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+from audio_common_msgs.msg import AudioData
+from sensor_msgs.msg import AudioInfo
+import torch
+import whisper
+import numpy as np
+import pyaudio
+import wave
+import io
+from datetime import datetime
+import threading
+import queue
+
+class WhisperSpeechRecognizer(Node):
+    def __init__(self):
+        super().__init__('whisper_speech_recognizer')
+
+        # Publishers and subscribers
+        self.transcription_publisher = self.create_publisher(
+            String, '/robot_transcription', 10
+        )
+        self.audio_subscriber = self.create_subscription(
+            AudioData, '/audio_input', self.audio_callback, 10
+        )
+
+        # Initialize Whisper model
+        # Choose model size based on computational requirements:
+        # 'tiny' (39M params), 'base' (74M), 'small' (244M), 'medium' (769M), 'large' (1550M)
+        self.model_size = 'small'  # Good balance of accuracy and speed
+        self.get_logger().info(f'Loading Whisper model: {self.model_size}')
+
+        try:
+            # Load model on GPU if available, otherwise CPU
+            if torch.cuda.is_available():
+                self.model = whisper.load_model(self.model_size).cuda()
+                self.get_logger().info('Whisper model loaded on GPU')
+            else:
+                self.model = whisper.load_model(self.model_size)
+                self.get_logger().info('Whisper model loaded on CPU')
+        except Exception as e:
+            self.get_logger().error(f'Failed to load Whisper model: {e}')
+            self.model = None
+            return
+
+        # Audio parameters
+        self.sample_rate = 16000  # Whisper expects 16kHz audio
+        self.audio_buffer = queue.Queue()
+        self.is_listening = False
+        self.audio_chunk_size = 1024  # Size of audio chunks to process
+
+        # Configuration parameters
+        self.silence_threshold = 0.01  # Threshold for voice activity detection
+        self.min_silence_duration = 1.0  # Minimum silence duration to consider speech ended (seconds)
+        self.max_recording_duration = 30.0  # Maximum recording duration (seconds)
+
+        # Initialize audio recording
+        self.audio = pyaudio.PyAudio()
+        self.stream = None
+
+        # Start audio processing thread
+        self.processing_thread = threading.Thread(target=self.process_audio_loop, daemon=True)
+        self.processing_thread.start()
+
+        self.get_logger().info('Whisper Speech Recognizer initialized')
+
+    def audio_callback(self, msg):
+        """Process incoming audio data"""
+        # Convert AudioData message to numpy array
+        audio_data = np.frombuffer(msg.data, dtype=np.int16).astype(np.float32) / 32768.0
+        self.audio_buffer.put(audio_data)
+
+    def start_listening(self):
+        """Start listening for audio input"""
+        if self.stream is None:
+            try:
+                self.stream = self.audio.open(
+                    format=pyaudio.paInt16,
+                    channels=1,
+                    rate=self.sample_rate,
+                    input=True,
+                    frames_per_buffer=self.audio_chunk_size
+                )
+                self.is_listening = True
+                self.get_logger().info('Started listening for audio input')
+            except Exception as e:
+                self.get_logger().error(f'Failed to start audio stream: {e}')
+
+    def stop_listening(self):
+        """Stop listening for audio input"""
+        self.is_listening = False
+        if self.stream:
+            self.stream.stop_stream()
+            self.stream.close()
+            self.stream = None
+
+    def process_audio_loop(self):
+        """Main audio processing loop"""
+        while rclpy.ok():
+            try:
+                if not self.audio_buffer.empty():
+                    # Get audio data from buffer
+                    audio_chunk = self.audio_buffer.get(timeout=0.1)
+
+                    # Check if audio has sufficient energy (voice activity detection)
+                    if self.is_audio_active(audio_chunk):
+                        # Process the audio chunk with Whisper
+                        transcription = self.transcribe_audio(audio_chunk)
+
+                        if transcription and transcription.strip():
+                            # Publish transcription
+                            transcription_msg = String()
+                            transcription_msg.data = transcription
+                            self.transcription_publisher.publish(transcription_msg)
+                            self.get_logger().info(f'Transcribed: {transcription}')
+                else:
+                    # Small delay when no audio data
+                    import time
+                    time.sleep(0.01)
+            except queue.Empty:
+                continue
+            except Exception as e:
+                self.get_logger().error(f'Error in audio processing loop: {e}')
+                import time
+                time.sleep(0.1)
+
+    def is_audio_active(self, audio_data):
+        """Check if audio contains speech activity"""
+        # Calculate RMS energy of the audio chunk
+        rms = np.sqrt(np.mean(audio_data ** 2))
+        return rms > self.silence_threshold
+
+    def transcribe_audio(self, audio_data):
+        """Transcribe audio data using Whisper"""
+        if self.model is None:
+            return None
+
+        try:
+            # Ensure audio is in the right format for Whisper
+            # Whisper expects 16kHz audio, so we'll work with the data as-is
+            audio_tensor = torch.from_numpy(audio_data).float()
+
+            # Move to GPU if available
+            if torch.cuda.is_available():
+                audio_tensor = audio_tensor.cuda()
+
+            # Transcribe using Whisper
+            result = self.model.transcribe(
+                audio_tensor,
+                language='en',  # Set to desired language or None for auto-detection
+                fp16=torch.cuda.is_available(),  # Use fp16 on GPU for efficiency
+                temperature=0.0,  # Deterministic output
+            )
+
+            return result['text'].strip()
+        except Exception as e:
+            self.get_logger().error(f'Whisper transcription error: {e}')
+            return None
+
+    def transcribe_from_file(self, audio_file_path):
+        """Transcribe from an audio file"""
+        if self.model is None:
+            return None
+
+        try:
+            result = self.model.transcribe(audio_file_path)
+            return result['text'].strip()
+        except Exception as e:
+            self.get_logger().error(f'File transcription error: {e}')
+            return None
+
+    def transcribe_with_options(self, audio_data, language='en', task='transcribe'):
+        """
+        Transcribe with specific options
+        task can be 'transcribe' or 'translate'
+        """
+        if self.model is None:
+            return None
+
+        try:
+            audio_tensor = torch.from_numpy(audio_data).float()
+
+            if torch.cuda.is_available():
+                audio_tensor = audio_tensor.cuda()
+
+            result = self.model.transcribe(
+                audio_tensor,
+                language=language,
+                task=task,
+                fp16=torch.cuda.is_available(),
+                temperature=0.0,
+            )
+
+            return {
+                'text': result['text'].strip(),
+                'segments': result.get('segments', []),
+                'language': result.get('language', language)
+            }
+        except Exception as e:
+            self.get_logger().error(f'Whisper transcription with options error: {e}')
+            return None
+
+    def get_audio_devices(self):
+        """Get available audio input devices"""
+        device_count = self.audio.get_device_count()
+        devices = []
+
+        for i in range(device_count):
+            device_info = self.audio.get_device_info_by_index(i)
+            if device_info['maxInputChannels'] > 0:  # Input device
+                devices.append({
+                    'index': i,
+                    'name': device_info['name'],
+                    'default_sample_rate': device_info['defaultSampleRate']
+                })
+
+        return devices
+
+class AdvancedWhisperRecognizer(WhisperSpeechRecognizer):
+    def __init__(self):
+        super().__init__()
+
+        # Additional features for advanced recognition
+        self.language_detection_enabled = True
+        self.speaker_identification_enabled = False
+        self.punctuation_restoration = True
+
+    def transcribe_with_language_detection(self, audio_data):
+        """Transcribe with automatic language detection"""
+        if self.model is None:
+            return None
+
+        try:
+            audio_tensor = torch.from_numpy(audio_data).float()
+
+            if torch.cuda.is_available():
+                audio_tensor = audio_tensor.cuda()
+
+            # First, detect the language
+            language_result = self.model.detect_language(audio_tensor)
+            detected_language = max(language_result, key=language_result.get)
+
+            # Then transcribe using the detected language
+            result = self.model.transcribe(
+                audio_tensor,
+                language=detected_language[0] if isinstance(detected_language, tuple) else detected_language,
+                fp16=torch.cuda.is_available(),
+                temperature=0.0,
+            )
+
+            return {
+                'text': result['text'].strip(),
+                'language': detected_language,
+                'confidence': language_result[detected_language]
+            }
+        except Exception as e:
+            self.get_logger().error(f'Language detection transcription error: {e}')
+            return None
+
+    def transcribe_with_timestamps(self, audio_data):
+        """Transcribe with word-level timestamps"""
+        if self.model is None:
+            return None
+
+        try:
+            audio_tensor = torch.from_numpy(audio_data).float()
+
+            if torch.cuda.is_available():
+                audio_tensor = audio_tensor.cuda()
+
+            # Use Whisper's alignment feature to get word-level timestamps
+            result = self.model.transcribe(
+                audio_tensor,
+                word_timestamps=True,
+                fp16=torch.cuda.is_available(),
+                temperature=0.0,
+            )
+
+            return {
+                'text': result['text'].strip(),
+                'segments': result.get('segments', []),
+                'words': self.extract_word_timestamps(result)
+            }
+        except Exception as e:
+            self.get_logger().error(f'Timestamp transcription error: {e}')
+            return None
+
+    def extract_word_timestamps(self, result):
+        """Extract word-level timestamps from transcription result"""
+        words = []
+
+        for segment in result.get('segments', []):
+            for word_info in segment.get('words', []):
+                words.append({
+                    'word': word_info.get('word', ''),
+                    'start': word_info.get('start', 0.0),
+                    'end': word_info.get('end', 0.0)
+                })
+
+        return words
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    # Create the Whisper speech recognizer node
+    recognizer = WhisperSpeechRecognizer()
+
+    try:
+        # Start listening for audio
+        recognizer.start_listening()
+
+        # Run the node
+        rclpy.spin(recognizer)
+    except KeyboardInterrupt:
+        recognizer.get_logger().info('Interrupted, shutting down...')
+    finally:
+        # Clean up
+        recognizer.stop_listening()
+        if recognizer.audio:
+            recognizer.audio.terminate()
+
+        recognizer.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Advanced Whisper Features for Robotics
+
+### Real-time Streaming with VAD (Voice Activity Detection)
+```python
+import webrtcvad
+import collections
+
+class StreamingWhisperRecognizer(WhisperSpeechRecognizer):
+    def __init__(self):
+        super().__init__()
+
+        # Voice Activity Detection
+        self.vad = webrtcvad.Vad()
+        self.vad.set_mode(1)  # Aggressiveness mode: 0-3
+
+        # Audio frame parameters
+        self.frame_duration = 30  # ms
+        self.frame_size = int(self.sample_rate * self.frame_duration / 1000)
+
+        # Ring buffer for storing audio frames
+        self.ring_buffer = collections.deque(maxlen=30)  # Store up to 900ms of audio
+
+        self.triggered = False
+        self.vad_window = 0
+        self.vad_threshold = 5  # Number of frames to trigger speech detection
+
+    def process_audio_frame(self, audio_frame):
+        """Process a single audio frame for VAD"""
+        # Convert to 16-bit PCM for VAD
+        audio_pcm = (audio_frame * 32767).astype(np.int16)
+
+        # Run VAD
+        is_speech = self.vad.is_speech(
+            audio_pcm.tobytes(),
+            self.sample_rate
+        )
+
+        return is_speech
+
+    def detect_voice_activity(self, audio_chunk):
+        """Detect voice activity in audio chunk"""
+        # Split audio into frames
+        frames = self.split_audio_into_frames(audio_chunk)
+
+        speech_frames = 0
+        total_frames = len(frames)
+
+        for frame in frames:
+            if self.process_audio_frame(frame):
+                speech_frames += 1
+
+        # Consider speech if more than 30% of frames contain speech
+        speech_ratio = speech_frames / total_frames if total_frames > 0 else 0
+        return speech_ratio > 0.3
+
+    def split_audio_into_frames(self, audio_chunk):
+        """Split audio chunk into smaller frames for VAD"""
+        frames = []
+        for i in range(0, len(audio_chunk), self.frame_size):
+            frame = audio_chunk[i:i + self.frame_size]
+            if len(frame) == self.frame_size:
+                frames.append(frame)
+        return frames
+```
+
+## Performance Optimization
+
+### Model Quantization for Edge Deployment
+```python
+def optimize_whisper_for_edge(model_size='small'):
+    """Optimize Whisper model for edge deployment"""
+    import torch.quantization as quantization
+
+    # Load model
+    model = whisper.load_model(model_size)
+
+    # Set model to evaluation mode
+    model.eval()
+
+    # Quantize the model
+    quantized_model = quantization.quantize_dynamic(
+        model,
+        {torch.nn.Linear, torch.nn.Conv1d},
+        dtype=torch.qint8
+    )
+
+    return quantized_model
+```
+
+## Integration with Robot Systems
+
+When integrating Whisper with robotic systems, consider:
+
+1. **Audio Quality**: Use high-quality microphones and preprocessing to improve recognition accuracy
+2. **Latency**: Balance between real-time performance and accuracy
+3. **Power Consumption**: Consider computational requirements for mobile robots
+4. **Privacy**: Ensure audio data is handled securely and privately
+
+## Cross-Module References
+
+For more information about related topics, see:
+- Module 1: Bridging Python Agents with RCLPY for ROS integration
+- Module 1: ROS 2 Architecture for Humanoids for communication patterns
+- Module 1: ROS 2 Nodes, Topics, and Services for messaging systems
+- Module 2: Gazebo Simulation Setup for testing speech recognition in simulation
+- Module 2: Physics and Sensor Simulation for audio environment modeling
+- Module 3: Perception and Manipulation for multimodal interaction
+- Module 3: Reinforcement Learning Control for adaptive listening behaviors
+- Module 3: Isaac SDK and Sim Overview for advanced simulation integration
+- Module 4: GPT Integration for Conversational AI
+- Module 4: Cognitive Planning for LLM-to-ROS translation
+- Module 4: Capstone Project: Autonomous Humanoid for complete system integration

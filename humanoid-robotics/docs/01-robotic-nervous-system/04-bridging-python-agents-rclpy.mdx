@@ -1,0 +1,249 @@
+---
+id: bridging-python-agents-rclpy
+title: Bridging Python Agents with RCLPY
+---
+
+# Bridging Python Agents with RCLPY
+
+Integrating AI agents with ROS 2 using the RCLPY client library.
+
+## Introduction to RCLPY
+
+RCLPY (Robot Client Library for Python) is the Python client library for ROS 2. It provides a Python API to interact with ROS 2's middleware, allowing Python-based AI agents to communicate with the broader ROS 2 ecosystem.
+
+## Key Components of RCLPY
+
+### Node Management
+RCLPY nodes serve as the entry point for communication with the ROS 2 graph:
+
+```python
+import rclpy
+from rclpy.node import Node
+
+class AIControlNode(Node):
+    def __init__(self):
+        super().__init__('ai_control_node')
+        # Initialize publishers, subscribers, services, etc.
+        self.get_logger().info('AI Control Node initialized')
+```
+
+### Publishers and Subscribers
+Connecting AI agents to sensor and control topics:
+
+```python
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import JointState
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from std_msgs.msg import String
+import numpy as np
+
+class HumanoidAIAgent(Node):
+    def __init__(self):
+        super().__init__('humanoid_ai_agent')
+
+        # Subscribe to sensor data
+        self.joint_state_subscriber = self.create_subscription(
+            JointState,
+            '/joint_states',
+            self.joint_state_callback,
+            10
+        )
+
+        # Publish control commands
+        self.trajectory_publisher = self.create_publisher(
+            JointTrajectory,
+            '/joint_trajectory_controller/joint_trajectory',
+            10
+        )
+
+        # Subscribe to high-level commands
+        self.command_subscriber = self.create_subscription(
+            String,
+            '/ai_commands',
+            self.command_callback,
+            10
+        )
+
+        # Timer for AI decision making
+        self.ai_timer = self.create_timer(0.1, self.ai_decision_loop)
+
+        # Store current joint states
+        self.current_joint_states = None
+        self.get_logger().info('Humanoid AI Agent initialized')
+
+    def joint_state_callback(self, msg):
+        """Callback for joint state updates"""
+        self.current_joint_states = msg
+        self.get_logger().debug(f'Received joint states: {len(msg.position)} joints')
+
+    def command_callback(self, msg):
+        """Callback for high-level commands"""
+        self.get_logger().info(f'Received command: {msg.data}')
+        # Process the command and update AI state
+        self.process_command(msg.data)
+
+    def ai_decision_loop(self):
+        """Main AI decision making loop"""
+        if self.current_joint_states is not None:
+            # Example AI decision making
+            target_positions = self.calculate_trajectory()
+            self.publish_trajectory(target_positions)
+
+    def process_command(self, command):
+        """Process high-level commands using AI logic"""
+        # Simple example: convert natural language to action
+        if "walk" in command.lower():
+            self.get_logger().info("Planning walking trajectory...")
+        elif "stand" in command.lower():
+            self.get_logger().info("Planning standing trajectory...")
+
+    def calculate_trajectory(self):
+        """Calculate target joint positions using AI logic"""
+        # Example: simple sinusoidal gait pattern
+        if self.current_joint_states is None:
+            return [0.0] * 10  # Default positions
+
+        # In a real implementation, this would use ML models
+        # or complex control algorithms
+        time_step = self.get_clock().now().nanoseconds / 1e9
+        target_positions = []
+
+        for i in range(10):  # 10 joints example
+            # Create a simple oscillating pattern
+            position = 0.2 * np.sin(time_step + i * 0.5)
+            target_positions.append(position)
+
+        return target_positions
+
+    def publish_trajectory(self, positions):
+        """Publish joint trajectory commands"""
+        trajectory_msg = JointTrajectory()
+        trajectory_msg.joint_names = [
+            'left_hip_joint', 'left_knee_joint', 'left_ankle_joint',
+            'right_hip_joint', 'right_knee_joint', 'right_ankle_joint',
+            'left_shoulder_joint', 'left_elbow_joint',
+            'right_shoulder_joint', 'right_elbow_joint'
+        ]
+
+        point = JointTrajectoryPoint()
+        point.positions = positions
+        point.time_from_start.sec = 0
+        point.time_from_start.nanosec = 50000000  # 50ms
+
+        trajectory_msg.points = [point]
+        self.trajectory_publisher.publish(trajectory_msg)
+
+def main(args=None):
+    rclpy.init(args=args)
+    ai_agent = HumanoidAIAgent()
+
+    try:
+        rclpy.spin(ai_agent)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        ai_agent.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Advanced Integration Patterns
+
+### Async/Await Support
+RCLPY supports async programming for more complex AI agent implementations:
+
+```python
+import asyncio
+import rclpy
+from rclpy.node import Node
+from rclpy.executors import SingleThreadedExecutor
+from std_msgs.msg import String
+
+class AsyncAIAgent(Node):
+    def __init__(self):
+        super().__init__('async_ai_agent')
+        self.publisher = self.create_publisher(String, 'ai_output', 10)
+
+    async def async_ai_process(self):
+        """Asynchronous AI processing"""
+        while rclpy.ok():
+            # Simulate async AI work
+            result = await self.run_ai_inference()
+            msg = String()
+            msg.data = f"AI Result: {result}"
+            self.publisher.publish(msg)
+            await asyncio.sleep(0.1)  # Non-blocking sleep
+
+    async def run_ai_inference(self):
+        """Simulate async AI inference"""
+        # In a real implementation, this might call an ML model
+        # or external AI service
+        await asyncio.sleep(0.05)  # Simulate processing time
+        return "Inference Complete"
+```
+
+### Parameter Management
+AI agents often need to adjust parameters dynamically:
+
+```python
+from rclpy.parameter import Parameter
+from rcl_interfaces.msg import ParameterDescriptor
+
+class ParametricAIAgent(Node):
+    def __init__(self):
+        super().__init__('parametric_ai_agent')
+
+        # Declare parameters with descriptions
+        self.declare_parameter(
+            'learning_rate',
+            0.001,
+            ParameterDescriptor(description='Learning rate for AI model')
+        )
+
+        self.declare_parameter(
+            'exploration_rate',
+            0.1,
+            ParameterDescriptor(description='Exploration rate for RL agent')
+        )
+
+        # Callback for parameter changes
+        self.add_on_set_parameters_callback(self.parameter_callback)
+
+    def parameter_callback(self, params):
+        """Handle parameter changes"""
+        for param in params:
+            self.get_logger().info(f'Parameter {param.name} changed to {param.value}')
+        return SetParametersResult(successful=True)
+```
+
+## Best Practices for AI-ROS Integration
+
+1. **Threading Considerations**: Be careful when using multi-threading with rclpy. The ROS 2 Python client library is not thread-safe by default.
+
+2. **Resource Management**: AI models can be resource-intensive. Monitor CPU and memory usage when running on embedded systems.
+
+3. **Real-time Constraints**: For time-critical control tasks, consider the latency introduced by AI processing.
+
+4. **Error Handling**: Implement robust error handling for AI model failures that don't compromise robot safety.
+
+## Cross-Module References
+
+For more information about AI integration with robotics, see:
+- Module 1: ROS 2 Architecture for Humanoids for communication patterns
+- Module 1: ROS 2 Nodes, Topics, and Services for messaging systems
+- Module 1: URDF Robot Description for Humanoids for robot modeling
+- Module 2: Gazebo Simulation Setup for testing Python agents in simulation
+- Module 2: URDF and SDF Formats for model integration
+- Module 2: Physics and Sensor Simulation for environment modeling
+- Module 2: Unity Visualization Setup for advanced rendering
+- Module 3: Isaac SDK and Sim Overview for advanced simulation platforms
+- Module 3: Perception and Manipulation for object interaction
+- Module 3: Reinforcement Learning Control for adaptive behavior
+- Module 3: Sim-to-Real Transfer for deployment considerations
+- Module 4: GPT Integration for Conversational AI
+- Module 4: Speech Recognition with Whisper for voice processing
+- Module 4: Cognitive Planning for LLM-to-ROS translation
+- Module 4: Capstone Project: Autonomous Humanoid for complete system integration

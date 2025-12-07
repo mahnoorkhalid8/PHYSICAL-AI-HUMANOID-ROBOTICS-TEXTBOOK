@@ -1,0 +1,232 @@
+---
+id: isaac-sdk-sim-overview
+title: NVIDIA Isaac SDK and Sim Overview
+---
+
+# NVIDIA Isaac SDK and Sim Overview
+
+An introduction to NVIDIA's platform for robot simulation and development.
+
+## Introduction to NVIDIA Isaac
+
+NVIDIA Isaac is a comprehensive platform for developing, simulating, and deploying AI-powered robots. It combines the Isaac Sim physics simulation environment with the Isaac ROS framework and Isaac Gym for reinforcement learning, providing a complete ecosystem for robotics development.
+
+## Key Components of NVIDIA Isaac
+
+1. **Isaac Sim**: High-fidelity physics simulation environment based on NVIDIA Omniverse
+2. **Isaac ROS**: Collection of ROS 2 packages optimized for perception and navigation
+3. **Isaac Gym**: Reinforcement learning environment for training robot policies
+4. **Isaac Apps**: Reference applications for various robotics tasks
+
+## Isaac Sim Python Script Outline
+
+Here's a conceptual Python script outline showing how to load a USD asset and interact with Isaac Sim:
+
+```python
+#!/usr/bin/env python3
+"""
+Isaac Sim Python Script for Humanoid Robot Simulation
+This script demonstrates loading a humanoid robot asset and basic interaction
+"""
+
+import carb
+import omni
+from omni.isaac.core import World
+from omni.isaac.core.utils.stage import add_reference_to_stage
+from omni.isaac.core.utils.nucleus import get_assets_root_path
+from omni.isaac.core.utils.prims import get_prim_at_path
+from omni.isaac.core.robots import Robot
+from omni.isaac.core.articulations import Articulation
+from omni.isaac.core.utils.viewports import set_camera_view
+import numpy as np
+import asyncio
+
+class HumanoidRobotSimulator:
+    def __init__(self):
+        self.world = None
+        self.robot = None
+        self.articulation = None
+
+    async def setup_environment(self):
+        """Setup the Isaac Sim environment and load robot asset"""
+        # Initialize the world
+        self.world = World(stage_units_in_meters=1.0)
+
+        # Set up camera view
+        set_camera_view(eye=[2.0, 2.0, 2.0], target=[0.0, 0.0, 1.0])
+
+        # Load a humanoid robot from USD file
+        # In a real scenario, this would be your robot's USD file
+        asset_path = "/path/to/humanoid_robot.usd"
+
+        # Add the robot to the stage
+        add_reference_to_stage(
+            usd_path=asset_path,
+            prim_path="/World/HumanoidRobot"
+        )
+
+        # Wait for the asset to load
+        await omni.kit.app.get_app().next_update_async()
+
+        # Get the robot articulation
+        self.articulation = self.world.scene.add(
+            Articulation(
+                prim_path="/World/HumanoidRobot",
+                name="humanoid_robot",
+            )
+        )
+
+        print("Environment setup complete")
+
+    async def run_simulation(self):
+        """Run the simulation with basic robot control"""
+        # Setup the environment
+        await self.setup_environment()
+
+        # Play the simulation
+        self.world.play()
+
+        # Main simulation loop
+        for i in range(1000):  # Run for 1000 steps
+            # Step the world
+            self.world.step(render=True)
+
+            # At specific intervals, perform robot control
+            if i % 50 == 0:
+                await self.execute_robot_behavior()
+
+        self.world.stop()
+
+    async def execute_robot_behavior(self):
+        """Execute a simple robot behavior"""
+        if self.articulation is not None:
+            # Get current joint positions
+            joint_positions = self.articulation.get_joint_positions()
+
+            # Apply a small random movement to demonstrate control
+            target_positions = joint_positions + np.random.normal(0, 0.1, size=joint_positions.shape)
+
+            # Set joint positions (in a real scenario, this would be computed based on desired behavior)
+            self.articulation.set_joint_positions(target_positions)
+
+            print(f"Applied joint positions at step: {self.world.current_time_step_index}")
+
+    async def run_with_ros_bridge(self):
+        """Example of integrating with ROS 2 bridge"""
+        # Setup environment
+        await self.setup_environment()
+
+        # Enable ROS bridge if available
+        try:
+            import omni.isaac.ros_bridge
+            print("ROS bridge enabled")
+        except ImportError:
+            print("ROS bridge not available")
+
+        # Play the simulation
+        self.world.play()
+
+        # Main loop with ROS integration
+        for i in range(1000):
+            self.world.step(render=True)
+
+            # Here you would typically publish/subscribe to ROS topics
+            # This is where Isaac ROS packages would be used
+            if i % 100 == 0:
+                self.publish_robot_state()
+
+        self.world.stop()
+
+    def publish_robot_state(self):
+        """Publish robot state to ROS (conceptual)"""
+        if self.articulation is not None:
+            # Get robot state
+            joint_positions = self.articulation.get_joint_positions()
+            joint_velocities = self.articulation.get_joint_velocities()
+
+            # In a real implementation, this would publish to ROS topics
+            # like /joint_states using the ROS bridge
+            print(f"Publishing robot state: {len(joint_positions)} joints")
+
+
+# Main execution
+async def main():
+    simulator = HumanoidRobotSimulator()
+
+    # Choose execution mode
+    print("Starting Isaac Sim for Humanoid Robot...")
+
+    # Option 1: Basic simulation
+    await simulator.run_simulation()
+
+    # Option 2: With ROS bridge (uncomment to use)
+    # await simulator.run_with_ros_bridge()
+
+
+if __name__ == "__main__":
+    # Run the async main function
+    asyncio.run(main())
+```
+
+## Isaac ROS Integration
+
+Isaac ROS provides hardware acceleration for perception tasks:
+
+```python
+# Example Isaac ROS node for perception
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+from isaac_ros_visual_slam_msgs.msg import VisualSlamStatus
+
+class IsaacPerceptionNode(Node):
+    def __init__(self):
+        super().__init__('isaac_perception_node')
+
+        # Subscribe to camera feed
+        self.subscription = self.create_subscription(
+            Image,
+            '/camera/image_raw',
+            self.camera_callback,
+            10
+        )
+
+        # Publisher for processed results
+        self.status_publisher = self.create_publisher(
+            VisualSlamStatus,
+            '/visual_slam/status',
+            10
+        )
+
+        self.get_logger().info('Isaac Perception Node Started')
+
+    def camera_callback(self, msg):
+        """Process camera data using Isaac ROS accelerators"""
+        # In a real implementation, this would use Isaac ROS
+        # hardware-accelerated perception algorithms
+        self.get_logger().info(f'Processing image: {msg.width}x{msg.height}')
+```
+
+## USD Asset Creation for Humanoid Robots
+
+Universal Scene Description (USD) files are fundamental to Isaac Sim:
+
+1. **Asset Structure**: Organize robot components hierarchically in USD
+2. **Material Definitions**: Use MDL materials for photorealistic rendering
+3. **Rigging**: Ensure proper joint definitions for articulation
+4. **LOD Models**: Create multiple levels of detail for performance
+
+## Best Practices for Isaac Development
+
+1. **Simulation Fidelity**: Balance physics accuracy with performance
+2. **Asset Optimization**: Keep polygon counts reasonable for real-time simulation
+3. **ROS Integration**: Use Isaac ROS packages for perception and navigation
+4. **AI Training**: Leverage Isaac Gym for reinforcement learning
+5. **Deployment**: Plan for sim-to-real transfer from the beginning
+
+## Cross-Module References
+
+For more information about related topics, see:
+- Module 2: Gazebo Simulation Setup for alternative simulation approaches
+- Module 3: Perception and Manipulation for Isaac-based perception
+- Module 4: Vision-Language-Action (VLA) for AI integration

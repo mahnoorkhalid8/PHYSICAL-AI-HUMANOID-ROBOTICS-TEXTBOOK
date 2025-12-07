@@ -1,0 +1,373 @@
+---
+id: perception-manipulation
+title: Perception and Manipulation with Isaac ROS
+---
+
+# Perception and Manipulation with Isaac ROS
+
+Implementing advanced perception and robotic manipulation using Isaac ROS.
+
+## Introduction to Isaac ROS Perception
+
+Isaac ROS is a collection of hardware-accelerated perception and navigation packages that enable robots to perceive and understand their environment. It provides GPU-accelerated implementations of common robotics algorithms, making it ideal for complex perception tasks required by humanoid robots.
+
+## Isaac ROS VSLAM Pipeline
+
+The Visual Simultaneous Localization and Mapping (VSLAM) pipeline in Isaac ROS is a sophisticated system that enables robots to build maps of their environment while simultaneously localizing themselves within those maps. Here's a high-level explanation of the VSLAM pipeline:
+
+### VSLAM Pipeline Components
+
+1. **Image Acquisition**: Stereo cameras or RGB-D sensors capture visual data
+2. **Feature Detection**: GPU-accelerated feature extraction (e.g., ORB, FAST)
+3. **Feature Matching**: Matching features across frames and stereo pairs
+4. **Visual Odometry**: Estimating motion between consecutive frames
+5. **Loop Closure**: Detecting revisited locations to correct drift
+6. **Map Optimization**: Bundle adjustment and graph optimization
+7. **Localization**: Estimating robot pose in the global map
+
+### Conceptual VSLAM Pipeline Diagram
+
+```
+Stereo Cameras (Left/Right)
+         ↓
+    [Image Rectification] ← Corrects lens distortion
+         ↓
+    [Feature Detection]   ← GPU-accelerated feature extraction
+         ↓
+    [Feature Matching]    ← Matches features between frames
+         ↓
+    [Stereo Matching]     ← Computes depth from stereo pairs
+         ↓
+    [Pose Estimation]     ← Estimates camera motion
+         ↓
+    [Local Map Building]  ← Creates local map from features
+         ↓
+    [Loop Closure Detect] ← Detects when robot returns to known area
+         ↓
+    [Global Optimization] ← Optimizes map and trajectory using graph SLAM
+         ↓
+    [Global Map Refine]   ← Updates global map with optimized data
+         ↓
+    [Robot Pose Output]   ← Provides 6-DOF pose estimate
+```
+
+### Isaac ROS VSLAM Implementation Example
+
+```python
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image, CameraInfo
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Odometry
+from std_msgs.msg import Header
+import numpy as np
+
+class IsaacVSLAMNode(Node):
+    def __init__(self):
+        super().__init__('isaac_vs_lam_node')
+
+        # Input topics (typically from stereo cameras)
+        self.left_image_sub = self.create_subscription(
+            Image,
+            '/camera/left/image_rect_color',
+            self.left_image_callback,
+            10
+        )
+
+        self.right_image_sub = self.create_subscription(
+            Image,
+            '/camera/right/image_rect_color',
+            self.right_image_callback,
+            10
+        )
+
+        self.left_info_sub = self.create_subscription(
+            CameraInfo,
+            '/camera/left/camera_info',
+            self.left_info_callback,
+            10
+        )
+
+        self.right_info_sub = self.create_subscription(
+            CameraInfo,
+            '/camera/right/camera_info',
+            self.right_info_callback,
+            10
+        )
+
+        # Output topics
+        self.odom_publisher = self.create_publisher(
+            Odometry,
+            '/visual_slam/odometry',
+            10
+        )
+
+        self.pose_publisher = self.create_publisher(
+            PoseStamped,
+            '/visual_slam/pose',
+            10
+        )
+
+        # Internal state
+        self.left_image = None
+        self.right_image = None
+        self.left_camera_info = None
+        self.right_camera_info = None
+        self.previous_pose = None
+        self.global_map = {}  # Simplified representation
+
+        self.get_logger().info('Isaac VSLAM Node Initialized')
+
+    def left_image_callback(self, msg):
+        """Process left camera image for VSLAM"""
+        # In a real implementation, this would interface with Isaac ROS VSLAM
+        # which uses CUDA and TensorRT for acceleration
+        self.left_image = msg
+        self.process_stereo_pair()
+
+    def right_image_callback(self, msg):
+        """Process right camera image for VSLAM"""
+        self.right_image = msg
+        self.process_stereo_pair()
+
+    def left_info_callback(self, msg):
+        """Process left camera calibration info"""
+        self.left_camera_info = msg
+
+    def right_info_callback(self, msg):
+        """Process right camera calibration info"""
+        self.right_camera_info = msg
+
+    def process_stereo_pair(self):
+        """Process stereo images to estimate depth and motion"""
+        if (self.left_image is not None and
+            self.right_image is not None and
+            self.left_camera_info is not None and
+            self.right_camera_info is not None):
+
+            # In Isaac ROS, this would use hardware-accelerated stereo matching
+            # For demonstration, we'll simulate the process
+            depth_map = self.compute_depth_map()
+            pose_change = self.estimate_visual_odometry(depth_map)
+
+            # Update global pose estimate
+            current_pose = self.update_global_pose(pose_change)
+
+            # Publish results
+            self.publish_odometry(current_pose)
+            self.publish_pose_stamped(current_pose)
+
+            # Process for mapping
+            self.update_local_map(depth_map, current_pose)
+
+            # Check for loop closure
+            self.check_loop_closure(current_pose)
+
+    def compute_depth_map(self):
+        """Compute depth map from stereo images (simulated)"""
+        # In Isaac ROS, this uses GPU-accelerated stereo matching
+        # Return a simulated depth map
+        height, width = 480, 640  # Typical image dimensions
+        return np.random.rand(height, width).astype(np.float32) * 10.0  # meters
+
+    def estimate_visual_odometry(self, depth_map):
+        """Estimate motion between frames using visual features"""
+        # In Isaac ROS, this uses GPU-accelerated feature detection and matching
+        # Return a simulated pose change
+        return np.array([0.1, 0.0, 0.0, 0.0, 0.0, 0.05])  # [x, y, z, roll, pitch, yaw]
+
+    def update_global_pose(self, pose_change):
+        """Update global pose based on visual odometry"""
+        if self.previous_pose is None:
+            # Initialize at origin
+            self.previous_pose = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+        # Integrate pose change
+        current_pose = self.previous_pose + pose_change
+        self.previous_pose = current_pose.copy()
+
+        return current_pose
+
+    def publish_odometry(self, pose):
+        """Publish odometry message"""
+        odom_msg = Odometry()
+        odom_msg.header = Header()
+        odom_msg.header.stamp = self.get_clock().now().to_msg()
+        odom_msg.header.frame_id = 'map'
+
+        # Position
+        odom_msg.pose.pose.position.x = pose[0]
+        odom_msg.pose.pose.position.y = pose[1]
+        odom_msg.pose.pose.position.z = pose[2]
+
+        # Orientation (simplified - assuming only yaw)
+        from math import sin, cos
+        yaw = pose[5]
+        odom_msg.pose.pose.orientation.z = sin(yaw / 2.0)
+        odom_msg.pose.pose.orientation.w = cos(yaw / 2.0)
+
+        self.odom_publisher.publish(odom_msg)
+
+    def publish_pose_stamped(self, pose):
+        """Publish pose stamped message"""
+        pose_msg = PoseStamped()
+        pose_msg.header = Header()
+        pose_msg.header.stamp = self.get_clock().now().to_msg()
+        pose_msg.header.frame_id = 'map'
+
+        pose_msg.pose.position.x = pose[0]
+        pose_msg.pose.position.y = pose[1]
+        pose_msg.pose.position.z = pose[2]
+
+        # Simplified orientation
+        from math import sin, cos
+        yaw = pose[5]
+        pose_msg.pose.orientation.z = sin(yaw / 2.0)
+        pose_msg.pose.orientation.w = cos(yaw / 2.0)
+
+        self.pose_publisher.publish(pose_msg)
+
+    def update_local_map(self, depth_map, pose):
+        """Update local map with new observations"""
+        # In Isaac ROS, this would use GPU-accelerated mapping algorithms
+        # For simulation, we'll just store the pose
+        self.global_map[self.get_clock().now().nanoseconds] = {
+            'pose': pose.copy(),
+            'depth_map': depth_map
+        }
+
+    def check_loop_closure(self, current_pose):
+        """Check for loop closure opportunities"""
+        # In Isaac ROS, this uses appearance-based loop closure detection
+        # For simulation, we'll check if we're near a previously visited location
+        for timestamp, data in self.global_map.items():
+            prev_pose = data['pose']
+            distance = np.linalg.norm(current_pose[:2] - prev_pose[:2])
+
+            if distance < 0.5:  # Threshold for potential loop closure
+                self.get_logger().info(f'Potential loop closure detected at {current_pose[:2]}')
+                # In a real system, this would trigger global map optimization
+
+def main(args=None):
+    rclpy.init(args=args)
+    vs_lam_node = IsaacVSLAMNode()
+
+    try:
+        rclpy.spin(vs_lam_node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        vs_lam_node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Isaac ROS Manipulation Pipeline
+
+Isaac ROS also provides advanced manipulation capabilities:
+
+### Manipulation Pipeline Components
+
+1. **Object Detection**: Identifying objects in the environment using DNNs
+2. **Pose Estimation**: Estimating 6-DOF pose of target objects
+3. **Motion Planning**: Generating collision-free trajectories
+4. **Grasp Planning**: Computing optimal grasp poses
+5. **Control Execution**: Executing planned motions with feedback control
+
+### Isaac ROS Manipulation Example
+
+```python
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import Pose, Point
+from moveit_msgs.msg import MoveItErrorCodes
+from sensor_msgs.msg import PointCloud2
+from std_msgs.msg import String
+import numpy as np
+
+class IsaacManipulationNode(Node):
+    def __init__(self):
+        super().__init__('isaac_manipulation_node')
+
+        # Subscriptions
+        self.pointcloud_sub = self.create_subscription(
+            PointCloud2,
+            '/intel_realsense_r200_depth/points',
+            self.pointcloud_callback,
+            10
+        )
+
+        self.object_detection_sub = self.create_subscription(
+            String,  # Simplified - would be a detection message in reality
+            '/object_detections',
+            self.detection_callback,
+            10
+        )
+
+        # Publishers
+        self.grasp_pose_pub = self.create_publisher(
+            Pose,
+            '/grasp_pose',
+            10
+        )
+
+        self.manipulation_command_pub = self.create_publisher(
+            String,
+            '/manipulation_command',
+            10
+        )
+
+        self.get_logger().info('Isaac Manipulation Node Initialized')
+
+    def pointcloud_callback(self, msg):
+        """Process point cloud data for manipulation"""
+        # In Isaac ROS, this would interface with hardware-accelerated
+        # segmentation and pose estimation
+        pass
+
+    def detection_callback(self, msg):
+        """Process object detection results"""
+        # Extract object information and plan manipulation
+        detected_object = msg.data  # Simplified representation
+        self.plan_manipulation(detected_object)
+
+    def plan_manipulation(self, object_name):
+        """Plan manipulation action for detected object"""
+        # In Isaac ROS, this would use GPU-accelerated planning algorithms
+        grasp_pose = self.calculate_grasp_pose(object_name)
+
+        # Publish grasp pose for execution
+        self.grasp_pose_pub.publish(grasp_pose)
+
+        # Send manipulation command
+        command_msg = String()
+        command_msg.data = f"grasp {object_name}"
+        self.manipulation_command_pub.publish(command_msg)
+
+    def calculate_grasp_pose(self, object_name):
+        """Calculate optimal grasp pose for object"""
+        # In Isaac ROS, this uses physics-aware grasp planning
+        # Return a sample grasp pose
+        grasp_pose = Pose()
+        grasp_pose.position = Point(x=0.5, y=0.0, z=0.1)
+        grasp_pose.orientation.w = 1.0  # No rotation
+
+        return grasp_pose
+```
+
+## Best Practices for Isaac ROS Development
+
+1. **Hardware Acceleration**: Leverage GPU acceleration for real-time performance
+2. **Calibration**: Ensure proper camera and sensor calibration for accurate results
+3. **Lighting Conditions**: Consider lighting effects on perception algorithms
+4. **Safety**: Implement safety checks and fallback behaviors
+5. **Testing**: Extensively test in simulation before real-world deployment
+
+## Cross-Module References
+
+For more information about related topics, see:
+- Module 2: Physics and Sensor Simulation for simulation-based perception
+- Module 3: Reinforcement Learning Control for AI-based manipulation
+- Module 4: Vision-Language-Action (VLA) for cognitive manipulation planning
