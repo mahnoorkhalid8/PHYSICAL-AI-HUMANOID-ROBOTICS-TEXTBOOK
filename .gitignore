@@ -8,6 +8,13 @@
 .docusaurus
 .cache-loader
 
+# Claude Code
+.claude/settings.local.json
+.claude/todos/
+.claude-code-router/config.json
+
+.mcp.json
+
 # Misc
 .DS_Store
 .env.local
