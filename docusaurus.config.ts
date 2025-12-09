@@ -15,15 +15,14 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://mahnoorkhalid8.github.io', // Replace with your GitHub username
+  url: 'https://your-vercel-project-url.vercel.app', // Replace with your Vercel URL
   // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/Physical-AI-Humanoid-Robotics-Textbook/', // GitHub repository name
+  baseUrl: '/', // For Vercel deployment
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'mahnoorkhalid8', // Your GitHub username or organization name.
-  projectName: 'Physical-AI-Humanoid-Robotics-Textbook', // Your repository name.
+  organizationName: 'your-github-username', // Your GitHub username or organization name.
+  projectName: 'your-repo-name', // Your repository name.
 
   onBrokenLinks: 'throw',
 
