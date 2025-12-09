@@ -1,28 +1,28 @@
-{
-  "LOG": true,
-  "LOG_LEVEL": "info",
-  "HOST": "127.0.0.1",
-  "PORT": 3456,
-  "API_TIMEOUT_MS": 600000,
-  "Providers": [
-    {
-      "name": "gemini",
-      "api_base_url": "https://generativelanguage.googleapis.com/v1beta/models/",
-      "api_key": "AIzaSyCQJToGvIcR_FPeMa68sYssPDOadYPwtic",
-      "models": [
-        "gemini-2.5-flash",
-        "gemini-2.0-flash"
-      ],
-      "transformer": {
-        "use": ["gemini"]
-      }
-    }
-  ],
-  "Router": {
-    "default": "gemini,gemini-2.5-flash",
-    "background": "gemini,gemini-2.5-flash",
-    "think": "gemini,gemini-2.5-flash",
-    "longContext": "gemini,gemini-2.5-flash",
-    "longContextThreshold": 60000
-  }
+{  
+  "LOG": true,  
+  "LOG_LEVEL": "info",  
+  "HOST": "127.0.0.1",  
+  "PORT": 3456,  
+  "API_TIMEOUT_MS": 600000,  
+  "Providers": [  
+    {  
+      "name": "qwen",  
+      "api_base_url": "https://portal.qwen.ai/v1/chat/completions",  
+      "api_key": "20f5_nQmkQR_rTg3EPOAYEGvfJFmBXtTdqv7a20et9IOwFjpfQB_2qIkobqD9ye8DdvTATZhLiiXGbAVAaZnSQ",  
+      "models": [  
+        "qwen3-coder-plus",  
+        "qwen3-coder-plus",  
+        "qwen3-coder-plus"  
+      ]  
+    }  
+  ],  
+  "Router": {  
+    "default": "qwen,qwen3-coder-plus",  
+    "background": "qwen,qwen3-coder-plus",  
+    "think": "qwen,qwen3-coder-plus",  
+    "longContext": "qwen,qwen3-coder-plus",  
+    "longContextThreshold": 60000,  
+    "webSearch": "qwen,qwen3-coder-plus"  
+  }  
 }
+
