@@ -31,6 +31,10 @@ const config: Config = {
     require.resolve('./src/utils/injectChatbot.js'),
   ],
 
+  themes: [
+    '@docusaurus/theme-classic',
+  ],
+
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
@@ -71,6 +75,23 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
+
+  // Development server configuration to proxy API requests to the backend
+  themes: [
+    '@docusaurus/theme-classic',
+  ],
+
+  // Configure dev server to proxy API requests
+  devServer: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false, // Set to true if using HTTPS
+        logLevel: 'debug',
+      },
+    },
+  },
 
   themeConfig: {
     // Replace with your project's social card

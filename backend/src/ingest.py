@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Dict, Any
 from qdrant_client import models
 from groq import Groq
-from .qdrant_service import qdrant_client
+from .qdrant_service import get_qdrant_client
 from .config import settings
 import logging
 import markdown
@@ -147,7 +147,7 @@ class BookIngestor:
     def _insert_batch(self, points: List[models.PointStruct]):
         """Insert a batch of points into Qdrant"""
         try:
-            qdrant_client.upsert(
+            get_qdrant_client().upsert(
                 collection_name=self.collection_name,
                 points=points
             )

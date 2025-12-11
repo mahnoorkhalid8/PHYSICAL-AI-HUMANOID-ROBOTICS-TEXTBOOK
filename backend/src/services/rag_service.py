@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional
 from groq import Groq
-from ..qdrant_service import qdrant_client
+from ..qdrant_service import get_qdrant_client
 from ..models.vector_embedding import SearchQuery, VectorEmbedding
 from ..config import settings
 from ..logging_config import logger
@@ -36,32 +36,74 @@ class RAGService:
                 query_embedding = self.get_query_embedding(search_text)
 
             # Search in Qdrant
-            search_results = qdrant_client.search(
-                collection_name=self.collection_name,
-                query_vector=query_embedding,
-                limit=top_k,
-                with_payload=True
-            )
+            qdrant_client = get_qdrant_client()
+
+            # For mock client compatibility, pass the query text as well
+            # In a real implementation, the search would be based on vector similarity
+            if hasattr(qdrant_client, 'demo_content'):
+                # This is our mock client - perform keyword-based search using the original query
+                search_results = []
+                query_lower = query_text.lower()
+
+                for item in qdrant_client.demo_content:
+                    content_lower = item["content"].lower()
+                    # Simple keyword matching for demo
+                    if ("physical ai" in query_lower and "physical ai" in content_lower) or \
+                       ("humanoid" in query_lower and "humanoid" in content_lower) or \
+                       ("robotic" in query_lower and "robotic" in content_lower) or \
+                       ("control" in query_lower and "control" in content_lower) or \
+                       ("nervous system" in query_lower and "nervous system" in content_lower) or \
+                       ("embodiment" in query_lower and "embodiment" in content_lower):
+                        search_results.append(item)
+
+                # If no keyword matches, return all demo content as fallback
+                if not search_results:
+                    search_results = qdrant_client.demo_content[:top_k]
+                else:
+                    search_results = search_results[:top_k]
+            else:
+                # This is a real Qdrant client
+                search_results = qdrant_client.search(
+                    collection_name=self.collection_name,
+                    query_vector=query_embedding,
+                    limit=top_k,
+                    with_payload=True
+                )
 
             # Convert results to VectorEmbedding objects
             vector_embeddings = []
             for result in search_results:
-                # Handle potential ID type mismatch - convert to int if possible, otherwise use hash
-                try:
-                    # Try to convert to int first
-                    point_id = int(result.id) if isinstance(result.id, (int, str, float)) else hash(str(result.id)) % (2**31)
-                except (ValueError, TypeError):
-                    # If conversion fails, use a hash-based integer
-                    point_id = hash(str(result.id)) % (2**31)
+                # Check if result is from mock client (dict) or real Qdrant (object with attributes)
+                if isinstance(result, dict):
+                    # This is a mock result
+                    point_id = result.get("id", hash(str(result.get("content", ""))) % (2**31))
+                    content = result.get("content", "")
+                    source_document = result.get("source_document", "")
+                    metadata = result.get("metadata", {})
+                    score = result.get("score", 0.0)
+                else:
+                    # This is a real Qdrant result
+                    # Handle potential ID type mismatch - convert to int if possible, otherwise use hash
+                    try:
+                        # Try to convert to int first
+                        point_id = int(result.id) if isinstance(result.id, (int, str, float)) else hash(str(result.id)) % (2**31)
+                    except (ValueError, TypeError):
+                        # If conversion fails, use a hash-based integer
+                        point_id = hash(str(result.id)) % (2**31)
+
+                    content = result.payload.get("content", "") if hasattr(result, 'payload') else ""
+                    source_document = result.payload.get("source_document", "") if hasattr(result, 'payload') else ""
+                    metadata = result.payload.get("metadata", {}) if hasattr(result, 'payload') else {}
+                    score = getattr(result, 'score', 0.0)
 
                 vector_embedding = VectorEmbedding(
                     id=point_id,
-                    content=result.payload.get("content", ""),
+                    content=content,
                     embedding_vector=[],  # We don't need the full embedding vector for the response
-                    content_type=result.payload.get("content_type", "text"),
-                    source_document=result.payload.get("source_document", ""),
-                    metadata=result.payload.get("metadata", {}),
-                    score=result.score
+                    content_type="text",
+                    source_document=source_document,
+                    metadata=metadata,
+                    score=score
                 )
                 vector_embeddings.append(vector_embedding)
 
@@ -155,8 +197,23 @@ class RAGService:
 
         except Exception as e:
             logger.error(f"Error generating answer: {str(e)}")
-            # Return a mock response for testing purposes when Groq API fails
-            return f"I'm sorry, but I'm currently unable to generate a detailed response. The Groq API may be unavailable or your API key may have exceeded its quota. The query was: '{query[:50]}...' with {len(context_list)} context sources. Please check your Groq API configuration."
+            # Check if the error is related to API key issues
+            error_str = str(e).lower()
+            if "api" in error_str and ("key" in error_str or "auth" in error_str or "invalid" in error_str or "401" in error_str or "403" in error_str):
+                return f"I'm sorry, but there's an issue with the API key. The API returned an authentication error. Please verify your API key in the .env file is correct and active. Error details: {str(e)}"
+            elif "400" in error_str:
+                return f"I'm sorry, there's an issue with the API request. The API returned a 400 error, which might be due to the model name or request format. Current model: {self.model_name}. Error details: {str(e)}"
+            elif "429" in error_str:
+                return f"I'm sorry, you've exceeded the API rate limit or quota. Please check your API plan and usage. Error details: {str(e)}"
+            else:
+                # For other errors, provide more helpful fallback
+                if len(context_list) > 0:
+                    # If we have context but can't generate an answer, provide a summary of the context
+                    context_preview = context_list[0].content[:200] + "..." if len(context_list[0].content) > 200 else context_list[0].content
+                    return f"I found some relevant information in the textbook: '{context_preview}'. However, I encountered an error calling the API. Error: {str(e)}"
+                else:
+                    # No context and API error - provide guidance
+                    return f"I'm sorry, I couldn't find relevant information in the textbook and encountered an API error. Error: {str(e)}"
 
     def process_query(self, query: str, selected_text: Optional[str] = None, search_scope: str = "full_book") -> Dict[str, Any]:
         """
