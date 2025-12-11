@@ -26,6 +26,11 @@ const config: Config = {
 
   onBrokenLinks: 'throw',
 
+  // Add client modules to inject the chatbot on all pages
+  clientModules: [
+    require.resolve('./src/utils/injectChatbot.js'),
+  ],
+
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".

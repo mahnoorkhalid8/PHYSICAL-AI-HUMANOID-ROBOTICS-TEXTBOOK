@@ -18,7 +18,7 @@ Success Criteria (Must be Met by /sp.implement):
 Constraints:
 - **Module Structure:** Use ordeand a minimal **URDF snippred folders (01-module-name, 02-module-name, etc.) and ordered files (01-topic-name.mdx, 02-topic-name.mdx, etc.) for logical organization.
 - **Code Block Detail:** Every technical explanation must be accompanied by a minimum of one syntactically highlighted code block (e.g., Python, YAML, C++) or configuration file (e.g., URDF, Launch File).
-- **Cross-Referencing:** Chapters must internally link (Docusaurus links) to related topics in other modules (e.g., Module 4's VLA must link back to Module 1's ROS 2 topics).
+- **Cross-Referencing:** Modules must internally link (Docusaurus links) to related topics in other modules (e.g., Module 4's VLA must link back to Module 1's ROS 2 topics).
 
 ### Required Specification Artifacts: Book Content
 
@@ -173,7 +173,7 @@ A student needs access to the RAG Chatbot Backend and Agent System files for int
 - **FR-001**: The Docusaurus docs folder (`humanoid-robotics/docs/`) MUST be structured with four top-level directories (one for each Module).
 - **FR-002**: All 13 weekly topics MUST be implemented as individual MDX files within the correct module folder, following ordered naming (e.g., `01-topic-name.mdx`).
 - **FR-003**: Each technical explanation MUST be accompanied by a minimum of one syntactically highlighted code block (e.g., Python, YAML, C++) or configuration file (e.g., URDF, Launch File).
-- **FR-004**: Chapters MUST internally link (Docusaurus links) to related topics in other modules.
+- **FR-004**: Modules MUST internally link (Docusaurus links) to related topics in other modules.
 - **FR-005**: A simplified ROS 2 Python node example (`publisher.py` code block) and a minimal URDF snippet for a humanoid link MUST be generated in Module 1.
 - **FR-006**: A sample SDF snippet defining a gravity-enabled environment and a Markdown table detailing Simulated Sensor Specifications (LiDAR, Depth Camera) MUST be generated in Module 2.
 - **FR-007**: A conceptual Isaac Sim Python script outline showing how to load a USD asset and a high-level Isaac ROS VSLAM pipeline diagram explanation MUST be generated in Module 3.

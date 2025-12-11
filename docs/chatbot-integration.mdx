@@ -1,0 +1,79 @@
+---
+id: chatbot-integration
+title: RAG Chatbot Integration
+---
+
+# RAG Chatbot Integration
+
+This document explains how to integrate the RAG (Retrieval-Augmented Generation) chatbot into the Physical AI Humanoid Robotics textbook.
+
+## Overview
+
+The RAG chatbot allows students to ask questions about the textbook content and receive answers based on the book's information. The system uses vector embeddings to find relevant content and generates responses using an AI model.
+
+## Features
+
+- **Context-Aware Queries**: Ask questions about specific content or the entire book
+- **Selected Text Queries**: Select text on a page and ask questions about it specifically
+- **Session Management**: Conversations persist across page navigation
+- **Source Attribution**: Answers include links to relevant textbook sections
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+
+## Integration
+
+The chatbot is integrated into the textbook using a React component that can be embedded in any MDX page:
+
+```jsx
+import ChatbotWidget from '@site/src/components/ChatbotWidget';
+
+<ChatbotWidget />
+```
+
+## API Endpoints
+
+The chatbot communicates with the backend via these API endpoints:
+
+### Query Endpoint
+- **POST** `/api/query`
+- Accepts questions and context information
+- Returns AI-generated answers with source attribution
+
+### Session Endpoints
+- **POST** `/api/session`
+- **GET** `/api/session/{session_id}/messages`
+- Manage conversation history and persistence
+
+## Architecture
+
+The system consists of:
+
+- **Frontend**: React component embedded in Docusaurus pages
+- **Backend**: FastAPI server with RAG capabilities
+- **Vector Store**: Qdrant for document embeddings
+- **Database**: Postgres for session management
+
+## Troubleshooting
+
+If the chatbot is not working:
+
+1. Verify the backend server is running
+2. Check that API endpoints are accessible
+3. Ensure the Qdrant vector store is configured correctly
+4. Confirm that document embeddings have been ingested
+
+## Development
+
+To run the backend server locally:
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn src.main:app --reload
+```
+
+To ingest textbook content:
+
+```bash
+cd backend/src
+python ingest.py
+```
