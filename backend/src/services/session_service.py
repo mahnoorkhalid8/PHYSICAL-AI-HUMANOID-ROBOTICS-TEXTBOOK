@@ -1,11 +1,19 @@
+import sys
+import os
+from pathlib import Path
+
+# Add the backend/src directory to the Python path
+src_dir = Path(__file__).parent.parent.absolute()
+sys.path.insert(0, str(src_dir))
+
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from uuid import UUID
 import uuid
 from datetime import datetime
-from ..models.chat_session import ChatSession
-from ..models.message import Message
-from ..logging_config import logger
+from models.chat_session import ChatSession
+from models.message import Message
+from logging_config import logger
 
 class SessionService:
     def __init__(self):

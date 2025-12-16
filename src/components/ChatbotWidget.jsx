@@ -64,8 +64,12 @@ const ChatbotWidget = () => {
         };
       }
 
-      // Call the backend API
-      const response = await fetch('/api/query', {
+      // Determine the API endpoint based on environment
+      // In development, we call the backend directly; in production, we use the proxy
+      const isDev = process.env.NODE_ENV === 'development';
+      const apiEndpoint = isDev ? 'http://localhost:8000/api/query' : '/api/query';
+
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,8 +77,27 @@ const ChatbotWidget = () => {
         body: JSON.stringify(requestBody)
       });
 
+      // If the response is not OK, try to read the error details from the body
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        let errBody = null;
+        try {
+          errBody = await response.json();
+        } catch (e) {
+          // ignore JSON parse errors
+        }
+
+        let errMsg = `API request failed with status ${response.status}`;
+        if (errBody) {
+          if (errBody.detail) {
+            if (typeof errBody.detail === 'string') errMsg = errBody.detail;
+            else if (errBody.detail.error) errMsg = `${errBody.detail.error}${errBody.detail.details?.message ? `: ${errBody.detail.details.message}` : ''}`;
+            else if (errBody.detail.message) errMsg = errBody.detail.message;
+          } else if (errBody.error) {
+            errMsg = errBody.error;
+          }
+        }
+
+        throw new Error(errMsg);
       }
 
       const data = await response.json();
@@ -101,7 +124,7 @@ const ChatbotWidget = () => {
       // Add error message to the chat
       const errorMessage = {
         id: Date.now() + 1,
-        text: 'Sorry, I encountered an error processing your request. Please try again.',
+        text: error?.message ? `Sorry, ${error.message}` : 'Sorry, I encountered an error processing your request. Please try again.',
         sender: 'bot',
         error: true,
         timestamp: new Date().toISOString()

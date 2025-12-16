@@ -4,10 +4,18 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from datetime import datetime
 import uuid
-from ..db import get_db
-from ..services.chat_service import ChatService
-from ..models.message import Message
-from ..logging_config import logger
+import sys
+import os
+from pathlib import Path
+
+# Add the backend/src directory to the Python path
+src_dir = Path(__file__).parent.parent.absolute()
+sys.path.insert(0, str(src_dir))
+
+from db import get_db
+from services.chat_service import ChatService
+from models.message import Message
+from logging_config import logger
 
 router = APIRouter()
 

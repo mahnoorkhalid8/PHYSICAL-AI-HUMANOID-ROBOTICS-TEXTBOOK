@@ -1,7 +1,15 @@
+import sys
+import os
+from pathlib import Path
+
+# Add the backend/src directory to the Python path
+src_dir = Path(__file__).parent.parent.absolute()
+sys.path.insert(0, str(src_dir))
+
 from sqlalchemy import Column, String, Text, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.mutable import MutableDict
-from ..db import Base
+from db import Base
 import uuid
 
 class QueryContext(Base):

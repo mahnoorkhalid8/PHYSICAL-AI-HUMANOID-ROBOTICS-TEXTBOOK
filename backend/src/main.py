@@ -1,9 +1,19 @@
+import sys
+import os
+from pathlib import Path
+
+# Add the backend directory to the Python path
+backend_dir = Path(__file__).parent.absolute()
+sys.path.insert(0, str(backend_dir))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .config import settings
-from .api import query_endpoint
-from .api import session_endpoint
-from .logging_config import logger
+
+# Import using absolute paths
+from config import settings
+from api.query_endpoint import router as query_router
+from api.session_endpoint import router as session_router
+from logging_config import logger
 
 app = FastAPI(
     title="RAG Chatbot API",
@@ -21,8 +31,8 @@ app.add_middleware(
 )
 
 # Include API routes
-app.include_router(query_endpoint.router, prefix="/api", tags=["query"])
-app.include_router(session_endpoint.router, prefix="/api", tags=["session"])
+app.include_router(query_router, prefix="/api", tags=["query"])
+app.include_router(session_router, prefix="/api", tags=["session"])
 
 @app.get("/")
 def read_root():
@@ -31,3 +41,12 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.backend_host,
+        port=settings.backend_port,
+        reload=True
+    )

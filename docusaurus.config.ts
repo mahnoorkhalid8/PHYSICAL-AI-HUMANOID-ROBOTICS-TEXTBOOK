@@ -21,18 +21,14 @@ const config: Config = {
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'your-github-username', // Your GitHub username or organization name.
-  projectName: 'your-repo-name', // Your repository name.
+  organizationName: 'mahnoorkhalid8', // Your GitHub username or organization name.
+  projectName: 'PHYSICAL-AI-HUMANOID-ROBOTICS-TEXTBOOK', // Your repository name.
 
   onBrokenLinks: 'throw',
 
   // Add client modules to inject the chatbot on all pages
   clientModules: [
     require.resolve('./src/utils/injectChatbot.js'),
-  ],
-
-  themes: [
-    '@docusaurus/theme-classic',
   ],
 
   // Even if you don't use internationalization, you can use this field to set
@@ -75,23 +71,6 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
-
-  // Development server configuration to proxy API requests to the backend
-  themes: [
-    '@docusaurus/theme-classic',
-  ],
-
-  // Configure dev server to proxy API requests
-  devServer: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false, // Set to true if using HTTPS
-        logLevel: 'debug',
-      },
-    },
-  },
 
   themeConfig: {
     // Replace with your project's social card
@@ -170,6 +149,9 @@ const config: Config = {
       darkTheme: prismThemes.dracula,
     },
   } satisfies Preset.ThemeConfig,
+  // Configuration for production deployment
+  // In production, API calls will go directly to the backend server
+  // The vercel.json file handles proxying for the deployed version
 };
 
 export default config;

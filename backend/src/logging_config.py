@@ -1,6 +1,13 @@
 import logging
 import sys
-from .config import settings
+import os
+from pathlib import Path
+
+# Add the backend/src directory to the Python path
+src_dir = Path(__file__).parent.absolute()
+sys.path.insert(0, str(src_dir))
+
+from config import settings
 
 def setup_logging():
     # Create logger

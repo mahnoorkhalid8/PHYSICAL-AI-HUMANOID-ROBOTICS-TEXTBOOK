@@ -1,11 +1,17 @@
 import os
+import sys
 import asyncio
 from pathlib import Path
 from typing import List, Dict, Any
 from qdrant_client import models
 from groq import Groq
-from .qdrant_service import get_qdrant_client
-from .config import settings
+
+# Add the backend/src directory to the Python path
+src_dir = Path(__file__).parent.absolute()
+sys.path.insert(0, str(src_dir))
+
+from qdrant_service import get_qdrant_client
+from config import settings
 import logging
 import markdown
 from bs4 import BeautifulSoup
@@ -161,7 +167,7 @@ async def main():
     ingestor = BookIngestor()
 
     # Path to the book content - adjust as needed
-    book_path = "../docs"  # Relative to backend/src/
+    book_path = "../../docs"  # Relative to backend/src/ (going up two levels to project root, then to docs)
 
     logger.info("Starting book ingestion process...")
     await ingestor.process_book_directory(book_path)

@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     qdrant_api_key: Optional[str] = os.getenv("QDRANT_API_KEY")
     cluster_endpoint: Optional[str] = os.getenv("CLUSTER_ENDPOINT")
 
-    # Postgres Configuration
-    database_url: str = os.getenv("DATABASE_URL", "postgresql://username:password@localhost:5432/chatbot_db")
+    # Database Configuration - Using SQLite for development
+    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./chatbot.db")
 
     # Groq Configuration
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")

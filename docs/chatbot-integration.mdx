@@ -31,16 +31,16 @@ import ChatbotWidget from '@site/src/components/ChatbotWidget';
 
 ## API Endpoints
 
-The chatbot communicates with the backend via these API endpoints:
+The chatbot communicates with the backend via proxy API endpoints:
 
 ### Query Endpoint
-- **POST** `/api/query`
+- **POST** `/api/query` (proxied to backend)
 - Accepts questions and context information
 - Returns AI-generated answers with source attribution
 
 ### Session Endpoints
-- **POST** `/api/session`
-- **GET** `/api/session/{session_id}/messages`
+- **POST** `/api/session` (proxied to backend)
+- **GET** `/api/session/{session_id}/messages` (proxied to backend)
 - Manage conversation history and persistence
 
 ## Architecture
@@ -48,18 +48,58 @@ The chatbot communicates with the backend via these API endpoints:
 The system consists of:
 
 - **Frontend**: React component embedded in Docusaurus pages
+- **Proxy Layer**: Next.js API routes that forward requests to backend (handles CORS)
 - **Backend**: FastAPI server with RAG capabilities
 - **Vector Store**: Qdrant for document embeddings
 - **Database**: Postgres for session management
+
+## Configuration
+
+### Environment Variables
+When deploying, configure the backend URL via environment variables:
+
+```env
+BACKEND_URL=https://your-backend-domain.com
+# or
+NEXT_PUBLIC_BACKEND_URL=https://your-backend-domain.com
+```
+
+### Vercel Configuration
+The `vercel.json` file handles API request proxying:
+
+```json
+{
+  "rewrites": [
+    {
+      "source": "/api/query",
+      "destination": "/api/proxy"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
+}
+```
+
 
 ## Troubleshooting
 
 If the chatbot is not working:
 
-1. Verify the backend server is running
-2. Check that API endpoints are accessible
+1. Verify the backend server is running and accessible at the configured BACKEND_URL
+2. Check that the proxy API endpoints are accessible
 3. Ensure the Qdrant vector store is configured correctly
 4. Confirm that document embeddings have been ingested
+5. Verify environment variables are set correctly in production
+6. Check Vercel deployment logs for proxy errors
 
 ## Development
 
