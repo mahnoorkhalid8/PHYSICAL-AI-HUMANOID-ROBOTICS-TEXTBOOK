@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/proxy"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
@@ -24,14 +18,5 @@
         }
       ]
     }
-  ],
-  "env": {
-    "BACKEND_URL": "$BACKEND_URL"
-  },
-  "functions": {
-    "src/pages/api/proxy/index.js": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  }
+  ]
 }

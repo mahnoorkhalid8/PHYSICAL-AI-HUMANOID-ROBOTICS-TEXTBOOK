@@ -65,9 +65,11 @@ const ChatbotWidget = () => {
       }
 
       // Determine the API endpoint based on environment
-      // In development, we call the backend directly; in production, we use the proxy
-      const isDev = process.env.NODE_ENV === 'development';
-      const apiEndpoint = isDev ? 'http://localhost:8000/api/query' : '/api/query';
+      // Use BACKEND_URL environment variable in production, localhost in development
+      const backendUrl = process.env.NODE_ENV === 'development'
+        ? 'http://localhost:8000'
+        : (process.env.BACKEND_URL || '');
+      const apiEndpoint = backendUrl ? `${backendUrl}/api/query` : '/api/query';
 
       const response = await fetch(apiEndpoint, {
         method: 'POST',
