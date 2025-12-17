@@ -10,16 +10,6 @@
       }
     }
   ],
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"  // frontend will call BACKEND_URL directly
-    },
-    {
-      "source": "/:path*",
-      "destination": "/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
