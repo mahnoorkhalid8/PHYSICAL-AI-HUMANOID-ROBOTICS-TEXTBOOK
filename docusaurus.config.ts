@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'Physical-AI-Humanoid-Robotics-Textbook',
+  title: 'Physical AI Humanoid Robotics Guide',
   tagline: 'A comprehensive guide to building intelligent humanoid robots',
   favicon: 'img/favicon.ico',
 
@@ -22,7 +22,7 @@ const config: Config = {
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'mahnoorkhalid8', // Your GitHub username or organization name.
-  projectName: 'PHYSICAL-AI-HUMANOID-ROBOTICS-TEXTBOOK', // Your repository name.
+  projectName: 'my-physical-ai-humanoid-textbook', // Your repository name.
 
   onBrokenLinks: 'throw',
 

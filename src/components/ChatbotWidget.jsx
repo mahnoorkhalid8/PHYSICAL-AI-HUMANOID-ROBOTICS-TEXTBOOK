@@ -67,55 +67,21 @@ const ChatbotWidget = () => {
         };
       }
 
-      // Use BACKEND_URL environment variable in production, localhost in development
-      const backendUrl = process.env.BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
-      const apiEndpoint = backendUrl ? `${backendUrl}/api/query` : 'http://localhost:8000/api/query';
+      // For now, since there's no backend, return a mock response
+      // In a real implementation, you would have a backend service to handle this
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
 
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      // If the response is not OK, try to read the error details from the body
-      if (!response.ok) {
-        let errBody = null;
-        try {
-          errBody = await response.json();
-        } catch (e) {
-          // ignore JSON parse errors
-        }
-
-        let errMsg = `API request failed with status ${response.status}`;
-        if (errBody) {
-          if (errBody.detail) {
-            if (typeof errBody.detail === 'string') errMsg = errBody.detail;
-            else if (errBody.detail.error) errMsg = `${errBody.detail.error}${errBody.detail.details?.message ? `: ${errBody.detail.details.message}` : ''}`;
-            else if (errBody.detail.message) errMsg = errBody.detail.message;
-          } else if (errBody.error) {
-            errMsg = errBody.error;
-          }
-        }
-
-        throw new Error(errMsg);
-      }
-
-      const data = await response.json();
-
-      // If a new session ID was returned, store it
-      if (data.session_id && !sessionId) {
-        setSessionId(data.session_id);
-        localStorage.setItem('chatbot-session-id', data.session_id);
-      }
+      const mockResponse = {
+        answer: "Thanks for your message! This is a frontend-only version of the chatbot. In a full implementation, this would connect to a backend API to provide AI-powered responses based on the textbook content.",
+        sources: []
+      };
 
       // Add bot response to the chat
       const botMessage = {
         id: Date.now() + 1,
-        text: data.answer,
+        text: mockResponse.answer,
         sender: 'bot',
-        sources: data.sources || [],
+        sources: mockResponse.sources || [],
         timestamp: new Date().toISOString()
       };
 
