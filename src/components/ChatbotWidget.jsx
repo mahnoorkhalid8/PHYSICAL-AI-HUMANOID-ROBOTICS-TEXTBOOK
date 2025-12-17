@@ -20,8 +20,11 @@ const ChatbotWidget = () => {
   };
 
   const [sessionId, setSessionId] = useState(() => {
-    // Try to get session ID from localStorage
-    return localStorage.getItem('chatbot-session-id') || null;
+    // Try to get session ID from localStorage (only in browser)
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('chatbot-session-id') || null;
+    }
+    return null;
   });
 
   const handleSendMessage = async (text) => {
@@ -37,8 +40,8 @@ const ChatbotWidget = () => {
     setIsLoading(true);
 
     try {
-      // Get selected text if any
-      const selectedText = window.getSelection ? window.getSelection().toString().trim() : '';
+      // Get selected text if any (check if running in browser)
+      const selectedText = typeof window !== 'undefined' && window.getSelection ? window.getSelection().toString().trim() : '';
 
       // Prepare the request payload
       const requestBody = {
@@ -54,22 +57,19 @@ const ChatbotWidget = () => {
       if (selectedText) {
         requestBody.selected_text = selectedText;
         requestBody.context = {
-          page_url: window.location.pathname,
+          page_url: typeof window !== 'undefined' ? window.location.pathname : '',
           search_scope: 'selected_text'
         };
       } else {
         requestBody.context = {
-          page_url: window.location.pathname,
+          page_url: typeof window !== 'undefined' ? window.location.pathname : '',
           search_scope: 'full_book'
         };
       }
 
-      // Determine the API endpoint based on environment
       // Use BACKEND_URL environment variable in production, localhost in development
-      const backendUrl = process.env.NODE_ENV === 'development'
-        ? 'http://localhost:8000'
-        : (process.env.BACKEND_URL || '');
-      const apiEndpoint = backendUrl ? `${backendUrl}/api/query` : '/api/query';
+      const backendUrl = process.env.BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
+      const apiEndpoint = backendUrl ? `${backendUrl}/api/query` : 'http://localhost:8000/api/query';
 
       const response = await fetch(apiEndpoint, {
         method: 'POST',
