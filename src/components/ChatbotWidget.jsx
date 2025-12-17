@@ -19,13 +19,17 @@ const ChatbotWidget = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const [sessionId, setSessionId] = useState(() => {
-    // Try to get session ID from localStorage (only in browser)
+  const [sessionId, setSessionId] = useState(null);
+
+  // Initialize session ID from localStorage when component mounts
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('chatbot-session-id') || null;
+      const storedSessionId = localStorage.getItem('chatbot-session-id');
+      if (storedSessionId) {
+        setSessionId(storedSessionId);
+      }
     }
-    return null;
-  });
+  }, []);
 
   const handleSendMessage = async (text) => {
     // Add user message to the chat
@@ -67,21 +71,80 @@ const ChatbotWidget = () => {
         };
       }
 
-      // For now, since there's no backend, return a mock response
-      // In a real implementation, you would have a backend service to handle this
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+      // Use backend API endpoint
+      // For development, use the backend server directly
+      // For production, this will be proxied through Vercel
+      const apiEndpoint = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+        ? '/api/query'  // Use relative path in production
+        : 'http://localhost:8000/api/query';  // Direct backend URL in development
 
-      const mockResponse = {
-        answer: "Thanks for your message! This is a frontend-only version of the chatbot. In a full implementation, this would connect to a backend API to provide AI-powered responses based on the textbook content.",
-        sources: []
-      };
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      let data;
+
+      // If the response is not OK, try to read the error details from the body
+      if (!response.ok) {
+        let errBody = null;
+        try {
+          errBody = await response.json();
+        } catch (e) {
+          // ignore JSON parse errors and create a generic error
+          errBody = { detail: { error: `API request failed with status ${response.status}` } };
+        }
+
+        let errMsg = `API request failed with status ${response.status}`;
+        let error_code = '';
+        if (errBody) {
+          if (errBody.detail) {
+            if (typeof errBody.detail === 'string') {
+              errMsg = errBody.detail;
+            } else if (errBody.detail.error) {
+              errMsg = `${errBody.detail.error}${errBody.detail.details?.message ? `: ${errBody.detail.details.message}` : ''}`;
+              error_code = errBody.detail.error;
+            } else if (errBody.detail.message) {
+              errMsg = errBody.detail.message;
+            }
+          } else if (errBody.error) {
+            errMsg = errBody.error;
+            error_code = errBody.error;
+          }
+        }
+
+        // If it's a SESSION_NOT_FOUND error, clear the invalid session ID
+        if (error_code === 'SESSION_NOT_FOUND' || errMsg.includes('SESSION_NOT_FOUND')) {
+          localStorage.removeItem('chatbot-session-id');
+          setSessionId(null);
+          // Don't throw an error, just continue without the session ID
+          // The backend will create a new session automatically
+          // Return early to avoid trying to parse the response again
+          return;
+        } else {
+          throw new Error(errMsg);
+        }
+      } else {
+        // Only parse the JSON if the response is OK
+        data = await response.json();
+      }
+
+      // If a new session ID was returned, store it
+      if (data.session_id) {
+        setSessionId(data.session_id);
+        localStorage.setItem('chatbot-session-id', data.session_id);
+      }
 
       // Add bot response to the chat
       const botMessage = {
         id: Date.now() + 1,
-        text: mockResponse.answer,
+        text: data.answer,
         sender: 'bot',
-        sources: mockResponse.sources || [],
+        sources: data.sources || [],
         timestamp: new Date().toISOString()
       };
 

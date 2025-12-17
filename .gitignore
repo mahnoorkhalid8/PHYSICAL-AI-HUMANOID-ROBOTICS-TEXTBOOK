@@ -54,15 +54,15 @@ Thumbs.db
 *.db-journal
 
 # Backend files to ignore
-backend/chatbot.db
-backend/src/__pycache__/
-backend/src/api/__pycache__/
-backend/src/models/__pycache__/
-backend/src/services/__pycache__/
-backend/src/db/__pycache__/
-backend/src/config/__pycache__/
-backend/src/logging_config/__pycache__/
-backend/src/qdrant_service/__pycache__/
+# backend/chatbot.db
+# backend/src/__pycache__/
+# backend/src/api/__pycache__/
+# backend/src/models/__pycache__/
+# backend/src/services/__pycache__/
+# backend/src/db/__pycache__/
+# backend/src/config/__pycache__/
+# backend/src/logging_config/__pycache__/
+# backend/src/qdrant_service/__pycache__/
 backend/.env
 
 # Python virtual environments (if any)

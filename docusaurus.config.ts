@@ -19,6 +19,10 @@ const config: Config = {
   // Set the /<baseUrl>/ pathname under which your site is served
   baseUrl: '/', // For Vercel deployment
 
+  // For development proxy to backend
+  onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'warn',
+
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'mahnoorkhalid8', // Your GitHub username or organization name.
@@ -29,6 +33,29 @@ const config: Config = {
   // Add client modules to inject the chatbot on all pages
   clientModules: [
     require.resolve('./src/utils/injectChatbot.js'),
+  ],
+
+  plugins: [
+    // Add development server proxy configuration
+    async function myPlugin() {
+      return {
+        name: 'custom-webpack-config',
+        configureWebpack(config, isServer, utils) {
+          return {
+            devServer: {
+              proxy: [
+                {
+                  context: ['/api'],
+                  target: 'http://localhost:8000',
+                  changeOrigin: true,
+                  secure: false,
+                }
+              ],
+            },
+          };
+        },
+      };
+    },
   ],
 
   // Even if you don't use internationalization, you can use this field to set
