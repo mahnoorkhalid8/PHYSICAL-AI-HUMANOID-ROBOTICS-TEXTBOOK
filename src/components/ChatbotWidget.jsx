@@ -73,11 +73,9 @@ const ChatbotWidget = () => {
 
       // Use backend API endpoint
       // For development, use the backend server directly
-      // For production deployment with external backend (like Hugging Face),
-      // the API endpoint should be configured to point to your external backend
-      // You can set this in Vercel environment variables or update this code
+      // For production, Vercel rewrites in vercel.json will proxy /api/* to the Hugging Face backend
       const apiEndpoint = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-        ? (window.chatbotBackendUrl || 'https://your-hf-space-url.hf.space/api/query')  // Use global variable or Hugging Face URL
+        ? '/api/query'  // Use relative path - Vercel rewrites will handle proxying
         : 'http://localhost:8000/api/query';  // Direct backend URL in development
 
       const response = await fetch(apiEndpoint, {

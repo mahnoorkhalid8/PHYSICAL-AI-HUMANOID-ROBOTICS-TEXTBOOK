@@ -10,6 +10,12 @@
       }
     }
   ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://mahnoorkhalid8-physical-ai-humanoid-robotics-textbook.hf.space/api/:path*"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
