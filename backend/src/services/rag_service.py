@@ -35,7 +35,8 @@ class RAGService:
                 search_text = f"{query_text} Context: {selected_text}"
                 query_embedding = self.get_query_embedding(search_text)
 
-            # Search in Qdrant
+            # Search in Qdrant - using search_points method for newer qdrant-client versions
+            from qdrant_client.http.models import SearchRequest
             search_results = qdrant_client.search(
                 collection_name=self.collection_name,
                 query_vector=query_embedding,

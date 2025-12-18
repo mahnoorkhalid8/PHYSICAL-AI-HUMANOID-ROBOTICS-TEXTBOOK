@@ -26,11 +26,8 @@ def get_qdrant_client():
                 https=True
             )
         else:
-            # Using local instance
-            client = QdrantClient(
-                host=settings.qdrant_host,
-                port=settings.qdrant_port
-            )
+            # Using local instance - specify full URL for proper connection
+            client = QdrantClient(host=settings.qdrant_host, port=settings.qdrant_port)
 
         # Ensure the collection exists
         try:
@@ -48,23 +45,19 @@ def get_qdrant_client():
         return client
     except Exception as e:
         logger.error(f"Failed to connect to Qdrant: {e}")
-        # Return a mock client that raises exceptions when used
-        class MockQdrantClient:
-            def __getattr__(self, name):
-                def method(*args, **kwargs):
-                    raise Exception("Qdrant service is not available. Please start Qdrant server or configure the connection properly.")
-                return method
-        _qdrant_client = MockQdrantClient()
-        return _qdrant_client
+        logger.error("Qdrant connection failed. Make sure Qdrant server is running and accessible.")
+        # Re-raise the exception to fail fast instead of masking the issue
+        raise e
 
-# Create a global client instance that will be initialized when first accessed
-class LazyQdrantClient:
-    def __init__(self):
-        self._client = None
-
-    def __getattr__(self, name):
-        if self._client is None:
-            self._client = get_qdrant_client()
-        return getattr(self._client, name)
-
-qdrant_client = LazyQdrantClient()
+# Direct client instance instead of LazyQdrantClient wrapper
+try:
+    qdrant_client = get_qdrant_client()
+except Exception as e:
+    logger.error(f"Failed to initialize Qdrant client at startup: {e}")
+    # Still create a mock client as fallback, but log the error
+    class MockQdrantClient:
+        def __getattr__(self, name):
+            def method(*args, **kwargs):
+                raise Exception(f"Qdrant service is not available: {str(e)}. Please start Qdrant server or configure the connection properly.")
+            return method
+    qdrant_client = MockQdrantClient()

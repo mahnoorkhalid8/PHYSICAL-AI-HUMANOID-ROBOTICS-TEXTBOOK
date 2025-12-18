@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     # Groq Configuration
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
-    groq_model: str = os.getenv("GROQ_MODEL", "llama3-70b-8192")
+    groq_model: str = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")  # Updated to supported model
 
     # Application Settings
     cors_origins: List[str] = eval(os.getenv("CORS_ORIGINS", '["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "https://yourdomain.com", "https://physical-ai-humanoid-robotics-textbook-bj41-nzx57tw58.vercel.app"]'))
