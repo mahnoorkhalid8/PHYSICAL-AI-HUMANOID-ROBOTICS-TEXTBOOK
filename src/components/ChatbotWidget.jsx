@@ -73,9 +73,11 @@ const ChatbotWidget = () => {
 
       // Use backend API endpoint
       // For development, use the backend server directly
-      // For production, this will be proxied through Vercel
+      // For production deployment with external backend (like Hugging Face),
+      // the API endpoint should be configured to point to your external backend
+      // You can set this in Vercel environment variables or update this code
       const apiEndpoint = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-        ? '/api/query'  // Use relative path in production
+        ? window.chatbotBackendUrl || '/api/query'  // Use global variable set by environment or relative path
         : 'http://localhost:8000/api/query';  // Direct backend URL in development
 
       const response = await fetch(apiEndpoint, {
@@ -140,11 +142,14 @@ const ChatbotWidget = () => {
       }
 
       // Add bot response to the chat
+      // Ensure sources is always an array to prevent "t.includes is not a function" error
+      const sourcesArray = Array.isArray(data.sources) ? data.sources : (data.sources ? [data.sources] : []);
+
       const botMessage = {
         id: Date.now() + 1,
         text: data.answer,
         sender: 'bot',
-        sources: data.sources || [],
+        sources: sourcesArray,
         timestamp: new Date().toISOString()
       };
 
