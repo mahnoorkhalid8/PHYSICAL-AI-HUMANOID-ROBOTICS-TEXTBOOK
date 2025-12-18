@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Postgres Configuration
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./chatbot.db")
 
+    # Check if running in Vercel environment
+    is_vercel: bool = bool(os.getenv("VERCEL", False))
+
     # Groq Configuration
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
     groq_model: str = os.getenv("GROQ_MODEL", "llama3-70b-8192")

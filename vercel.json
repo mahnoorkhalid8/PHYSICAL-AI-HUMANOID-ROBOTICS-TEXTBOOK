@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "version": 2,
   "name": "my-clean-physical-ai-textbook",
   "builds": [
@@ -26,42 +25,8 @@
         {
           "key": "Access-Control-Allow-Headers",
           "value": "Content-Type, Authorization"
-=======
-    "version": 2,
-    "name": "my-clean-physical-ai-humanoid-textbook",
-    "builds": [
-      {
-        "src": "package.json",
-        "use": "@vercel/static-build",
-        "config": {
-          "distDir": "build"
->>>>>>> e6bf6fcd36f08d7b49e1022053f0b0c4b756ff33
         }
-      }
-    ],
-    "rewrites": [
-      {
-        "source": "/api/:path*",
-        "destination": "https://mahnoorkhalid8-physical-ai-humanoid-robotics-textbook.hf.space/api/:path*"
-      }
-    ],
-    "headers": [
-      {
-        "source": "/(.*)",
-        "headers": [
-          {
-            "key": "Access-Control-Allow-Origin",
-            "value": "*"
-          },
-          {
-            "key": "Access-Control-Allow-Methods",
-            "value": "GET, POST, PUT, DELETE, OPTIONS"
-          },
-          {
-            "key": "Access-Control-Allow-Headers",
-            "value": "Content-Type, Authorization"
-          }
-        ]
-      }
-    ]
-  }
+      ]
+    }
+  ]
+}
