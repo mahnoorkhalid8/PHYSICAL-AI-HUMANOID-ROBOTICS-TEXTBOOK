@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     groq_model: str = os.getenv("GROQ_MODEL", "llama3-70b-8192")
 
     # Application Settings
-    cors_origins: List[str] = eval(os.getenv("CORS_ORIGINS", '["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "https://yourdomain.com"]'))
+    cors_origins: List[str] = eval(os.getenv("CORS_ORIGINS", '["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "https://yourdomain.com", "https://physical-ai-humanoid-robotics-textbook-bj41-nzx57tw58.vercel.app"]'))
 
     class Config:
         env_file = ".env.local"

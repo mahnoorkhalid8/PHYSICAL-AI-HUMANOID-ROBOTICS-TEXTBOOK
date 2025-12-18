@@ -77,7 +77,7 @@ const ChatbotWidget = () => {
       // the API endpoint should be configured to point to your external backend
       // You can set this in Vercel environment variables or update this code
       const apiEndpoint = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-        ? window.chatbotBackendUrl || '/api/query'  // Use global variable set by environment or relative path
+        ? (window.chatbotBackendUrl || 'https://your-hf-space-url.hf.space/api/query')  // Use global variable or Hugging Face URL
         : 'http://localhost:8000/api/query';  // Direct backend URL in development
 
       const response = await fetch(apiEndpoint, {
