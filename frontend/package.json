@@ -4,13 +4,37 @@
   "description": "React chatbot component for RAG-based textbook queries",
   "main": "index.js",
   "scripts": {
+    "dev": "docusaurus start",
+    "build": "docusaurus build",
+    "swizzle": "docusaurus swizzle",
+    "deploy": "docusaurus deploy",
+    "clear": "docusaurus clear",
+    "serve": "docusaurus serve",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@docusaurus/core": "^3.1.0",
+    "@docusaurus/preset-classic": "^3.1.0",
+    "axios": "^1.6.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
-  "keywords": ["react", "chatbot", "rag", "docusaurus"],
-  "author": "",
-  "license": "ISC"
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "3.1.0",
+    "@docusaurus/types": "3.1.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0"
+  }
 }

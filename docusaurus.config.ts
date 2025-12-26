@@ -29,11 +29,14 @@ const config: Config = {
   projectName: 'my-physical-ai-humanoid-textbook', // Your repository name.
 
   onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'warn',
 
   // Add client modules to inject the chatbot on all pages
   clientModules: [
     require.resolve('./src/utils/injectChatbot.js'),
+    require.resolve('./src/components/Root.tsx'),
   ],
+
 
   plugins: [
     // Add development server proxy configuration
@@ -57,6 +60,7 @@ const config: Config = {
       };
     },
   ],
+
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
@@ -116,7 +120,7 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Tutorial',
+          label: 'Book',
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
@@ -124,6 +128,7 @@ const config: Config = {
           label: 'GitHub',
           position: 'right',
         },
+        {to: '/sign-in', label: 'Sign In', position: 'right'},
       ],
     },
     footer: {
@@ -133,7 +138,7 @@ const config: Config = {
           title: 'Docs',
           items: [
             {
-              label: 'Tutorial',
+              label: 'Book',
               to: '/docs/intro',
             },
           ],
