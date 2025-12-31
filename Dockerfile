@@ -30,21 +30,9 @@ RUN pip install --no-cache-dir sentence-transformers torch
 # Expose port (Hugging Face typically uses the PORT environment variable)
 EXPOSE 8000
 
-# Create a startup script
-RUN echo '#!/bin/bash\n\
-echo "Starting initialization..."\n\
-echo "Environment variables available:"\n\
-env | grep -E "(PORT|GROQ|QDRANT|DATABASE|HF)" || true\n\
-\n\
-# Set default host and port\n\
-export BACKEND_HOST="0.0.0.0"\n\
-export BACKEND_PORT="${PORT:-8000}"\n\
-\n\
-echo "Running startup initialization..."\n\
-cd /app\n\
-python startup.py\n\
-echo "Initialization completed, starting main application..."\n\
-python app.py' > start.sh && chmod +x start.sh
+# Copy the startup script
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 
 # Start the application
-CMD ["./start.sh"]
+CMD ["/app/start.sh"]
