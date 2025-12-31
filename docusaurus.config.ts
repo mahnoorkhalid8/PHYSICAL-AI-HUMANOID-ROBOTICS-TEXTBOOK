@@ -31,8 +31,9 @@ const config: Config = {
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
 
-  // Add client modules to inject the chatbot on all pages
+  // Add client modules to inject the chatbot and clear auth data on all pages
   clientModules: [
+    require.resolve('./src/utils/clearAuthData.js'),
     require.resolve('./src/utils/injectChatbot.js'),
     require.resolve('./src/components/Root.tsx'),
   ],

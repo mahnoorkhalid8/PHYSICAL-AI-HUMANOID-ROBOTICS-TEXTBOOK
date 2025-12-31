@@ -66,6 +66,7 @@ Thumbs.db
 # backend/src/logging_config/__pycache__/
 # backend/src/qdrant_service/__pycache__/
 backend/.env
+backend/chatbot.db
 
 # Python virtual environments (if any)
 env/

@@ -15,7 +15,7 @@ const PersonalizeButton: React.FC<PersonalizeButtonProps> = ({
   chapterTitle = 'Current Chapter',
   className = ''
 }) => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, getToken } = useAuth();
   const {
     personalizeContent,
     loading,
@@ -37,6 +37,12 @@ const PersonalizeButton: React.FC<PersonalizeButtonProps> = ({
     }
 
     try {
+      // Get the authentication token
+      const token = await getToken();
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
       await personalizeContent({
         chapter_content: chapterContent,
         chapter_title: chapterTitle,
@@ -45,7 +51,7 @@ const PersonalizeButton: React.FC<PersonalizeButtonProps> = ({
           software: user.software_background,
           hardware: user.hardware_background
         }
-      });
+      }, token);
 
       setIsModalOpen(true);
     } catch (err) {

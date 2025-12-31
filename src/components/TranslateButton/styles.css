@@ -1,0 +1,184 @@
+/* Translation Button Styles */
+.translate-container {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.translate-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.translate-button:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.translate-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.button-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.button-spinner::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #000;
+}
+
+.modal-controls {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.modal-controls button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.modal-controls button.active {
+  background-color: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+
+.modal-body {
+  padding: 1rem;
+}
+
+.content-section {
+  margin-bottom: 1rem;
+}
+
+.content-section h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.content-display {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+.urdu-content {
+  direction: rtl;
+  text-align: right;
+  font-size: 1.1em;
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif;
+}
+
+.side-by-side-container {
+  display: flex;
+  gap: 1rem;
+}
+
+.half-width {
+  flex: 1;
+  min-width: 0; /* Prevents flex items from overflowing */
+}
+
+.modal-error {
+  padding: 1rem;
+  color: #d32f2f;
+  background-color: #ffebee;
+  border-radius: 4px;
+  margin: 1rem;
+}
+
+.modal-footer {
+  padding: 1rem;
+  border-top: 1px solid #eee;
+  text-align: right;
+  color: #666;
+  font-size: 0.9em;
+}

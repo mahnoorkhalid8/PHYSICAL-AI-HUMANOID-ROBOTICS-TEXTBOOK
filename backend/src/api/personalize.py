@@ -46,6 +46,13 @@ async def auth_middleware(request: Request, call_next):
             detail="Invalid or expired token"
         )
 
+@router.get("/personalize/health")
+async def personalize_health():
+    """
+    Health check for the personalization endpoint
+    """
+    return {"status": "personalize endpoint is healthy"}
+
 @router.post("/personalize", response_model=PersonalizeResponse)
 async def personalize_content(
     request: PersonalizeRequest,

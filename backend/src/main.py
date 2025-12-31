@@ -86,6 +86,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .api import query_endpoint
 from .api import session_endpoint
+from .api import personalize
+from .api import auth_endpoint
+from .api.v1 import translation
 from .logging_config import logger
 from .db import Base, engine
 from .models.chat_session import ChatSession
@@ -106,8 +109,29 @@ async def lifespan(app: FastAPI):
         inspector = inspect(engine)
         tables = inspector.get_table_names()
         logger.info(f"Available tables: {tables}")
+
+        # Pre-initialize services to avoid first-request delays
+        logger.info("Pre-initializing services...")
+        try:
+            # Try to create a RAG service to ensure Qdrant connection is established
+            from .services.rag_service import RAGService
+            rag_service = RAGService()
+            logger.info("RAG service initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing RAG service: {e}")
+            # Don't raise exception here as we want the app to start anyway
+            # The error will be handled during actual requests
+
+        try:
+            # Try to create a chat service
+            from .services.chat_service import ChatService
+            chat_service = ChatService()
+            logger.info("Chat service initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing Chat service: {e}")
+
     except Exception as e:
-        logger.error(f"Error creating database tables: {e}")
+        logger.error(f"Error during startup initialization: {e}")
         raise
     yield
     # Shutdown logic can go here if needed
@@ -132,6 +156,9 @@ app.add_middleware(
 # Include API routes
 app.include_router(query_endpoint.router, prefix="/api", tags=["query"])
 app.include_router(session_endpoint.router, prefix="/api", tags=["session"])
+app.include_router(personalize.router, prefix="/api", tags=["personalize"])
+app.include_router(auth_endpoint.router, prefix="/api", tags=["auth"])
+app.include_router(translation.router, prefix="/api", tags=["translate"])
 
 @app.get("/")
 def read_root():

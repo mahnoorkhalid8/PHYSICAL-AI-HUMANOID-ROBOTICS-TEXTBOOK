@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { useAuth } from './useAuth';
 import { PersonalizeRequest, PersonalizeResponse } from './types';
 
 interface PersonalizationState {
@@ -15,20 +16,20 @@ export const usePersonalization = () => {
     result: null
   });
 
-  const personalizeContent = async (request: PersonalizeRequest): Promise<void> => {
+  const personalizeContent = async (request: PersonalizeRequest, token: string): Promise<void> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      // Get the JWT token from auth context
-      // In a real implementation, this would come from the useAuth hook
-      const token = localStorage.getItem('auth_token'); // This is a placeholder - should use proper auth context
-
       if (!token) {
         throw new Error('No authentication token available');
       }
 
+      // For Docusaurus, use relative URLs to work with proxy configuration
+      // This allows the request to go through the Docusaurus proxy to the backend
+      const apiUrl = '/api/personalize';
+
       const response = await axios.post<PersonalizeResponse>(
-        `${process.env.REACT_APP_API_BASE_URL || '/api'}/personalize`,
+        apiUrl,
         request,
         {
           headers: {
