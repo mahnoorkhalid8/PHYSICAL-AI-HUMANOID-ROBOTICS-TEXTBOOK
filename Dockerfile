@@ -31,8 +31,8 @@ RUN pip install --no-cache-dir sentence-transformers torch
 EXPOSE 8000
 
 # Copy the startup script
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
+COPY start.sh ./
+RUN chmod +x ./start.sh
 
 # Start the application
-CMD ["/app/start.sh"]
+CMD ["./start.sh"]
