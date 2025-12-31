@@ -1,4 +1,9 @@
 from backend.src.main import app
+import uvicorn
+import os
+from threading import Thread
 
-# This file is used by Hugging Face Spaces to run the application
-# The main application is in backend/src/main.py, but Hugging Face looks for app in root
+# For Hugging Face Spaces, we need to run the FastAPI app
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
