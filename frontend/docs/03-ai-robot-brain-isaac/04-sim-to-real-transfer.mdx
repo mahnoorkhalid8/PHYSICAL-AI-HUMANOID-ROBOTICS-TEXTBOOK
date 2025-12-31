@@ -1,0 +1,304 @@
+---
+id: sim-to-real-transfer
+title: Sim-to-Real Transfer for Humanoid Robots
+---
+
+# Sim-to-Real Transfer for Humanoid Robots
+
+Bridging the gap between simulated and real-world robot performance.
+
+## Introduction to Sim-to-Real Transfer
+
+Sim-to-real transfer is the process of taking policies, controllers, or algorithms developed in simulation and successfully deploying them on physical robots. This is a critical challenge in humanoid robotics, where the complexity of the real world often differs significantly from even the most sophisticated simulations.
+
+## The Reality Gap
+
+The "reality gap" encompasses all the differences between simulation and reality:
+
+### Physical Differences
+- **Dynamics**: Real robots have unmodeled dynamics, friction, and wear
+- **Actuator Behavior**: Motors have delays, dead zones, and saturation effects
+- **Sensing**: Real sensors have noise, bias, and limited resolution
+- **Structural Compliance**: Real robots flex and vibrate in ways simulations don't capture
+
+### Environmental Differences
+- **Surface Properties**: Real surfaces have varying friction and compliance
+- **Lighting Conditions**: Affects camera-based perception significantly
+- **Temperature and Humidity**: Impact electronics and mechanical properties
+- **External Disturbances**: Wind, vibrations, and other environmental factors
+
+## Domain Randomization
+
+Domain randomization is a key technique for improving sim-to-real transfer by training policies across a wide range of randomized simulation parameters:
+
+### Physics Parameter Randomization
+```python
+import numpy as np
+
+class DomainRandomizer:
+    def __init__(self):
+        # Randomize physical parameters during training
+        self.param_ranges = {
+            'robot_mass': [0.8, 1.2],           # ±20% mass variation
+            'link_lengths': [0.95, 1.05],       # ±5% length variation
+            'friction_coeff': [0.3, 1.0],       # Wide friction range
+            'motor_constants': [0.9, 1.1],      # Motor characteristic variation
+            'sensor_noise_std': [0.0, 0.02],    # Sensor noise range
+            'control_latency': [0.0, 0.02],     # Up to 20ms latency
+        }
+
+    def randomize_environment(self, env_id):
+        """Randomize environment parameters for domain randomization"""
+        # Randomize robot physical properties
+        randomized_params = {}
+        for param, (min_val, max_val) in self.param_ranges.items():
+            random_factor = np.random.uniform(min_val, max_val)
+            randomized_params[param] = random_factor
+
+        # Apply randomized parameters to simulation
+        self.apply_robot_parameters(randomized_params)
+        self.apply_sensor_parameters(randomized_params)
+
+        return randomized_params
+
+    def apply_robot_parameters(self, params):
+        """Apply randomized parameters to robot model"""
+        # Example: Update robot mass properties
+        # In Isaac Sim, this would involve modifying USD prim properties
+        pass
+
+    def apply_sensor_parameters(self, params):
+        """Apply randomized parameters to sensors"""
+        # Example: Add noise to sensor readings
+        sensor_noise_std = params['sensor_noise_std']
+        # Apply noise model to sensor outputs
+        pass
+```
+
+### Visual Domain Randomization
+For vision-based systems, randomize visual properties:
+- Texture variations
+- Lighting conditions
+- Camera parameters
+- Visual noise and artifacts
+
+## System Identification and Parameter Estimation
+
+Accurate modeling of real robot dynamics is crucial:
+
+### Inertial Parameter Estimation
+```python
+import numpy as np
+from scipy.optimize import minimize
+
+class SystemIdentifier:
+    def __init__(self, robot_model):
+        self.robot_model = robot_model
+        self.identified_params = {}
+
+    def estimate_inertial_params(self, excitation_data):
+        """
+        Estimate inertial parameters using excitation data
+        """
+        # Formulate the identification problem
+        # Y = H * theta, where Y is measurements, H is regressor matrix, theta are parameters
+        Y = self.extract_regression_data(excitation_data)
+        H = self.build_regressor_matrix(excitation_data)
+
+        # Solve for parameters using least squares
+        theta_opt = np.linalg.lstsq(H, Y, rcond=None)[0]
+
+        # Update identified parameters
+        self.identified_params = self.unpack_parameters(theta_opt)
+
+        return self.identified_params
+
+    def extract_regression_data(self, data):
+        """Extract relevant data for regression"""
+        # Implementation depends on specific robot model
+        pass
+
+    def build_regressor_matrix(self, data):
+        """Build regressor matrix for parameter estimation"""
+        # Implementation depends on specific robot model
+        pass
+
+    def unpack_parameters(self, theta):
+        """Convert parameter vector to meaningful parameters"""
+        # Convert optimization result to mass, center of mass, inertia tensor
+        pass
+```
+
+## Robust Control Strategies
+
+Design controllers that can handle model uncertainties:
+
+### Robust PID Control
+```python
+class RobustPIDController:
+    def __init__(self, kp_base, ki_base, kd_base, uncertainty_bounds):
+        self.kp_base = kp_base
+        self.ki_base = ki_base
+        self.kd_base = kd_base
+        self.uncertainty_bounds = uncertainty_bounds
+
+        # Adaptive gains based on uncertainty
+        self.kp = kp_base
+        self.ki = ki_base
+        self.kd = kd_base
+
+    def update_gains(self, uncertainty_estimate):
+        """Update gains based on estimated model uncertainty"""
+        # Increase gains for better tracking when model is accurate
+        # Decrease gains to avoid instability when model is uncertain
+        confidence_factor = 1.0 / (1.0 + uncertainty_estimate)
+        self.kp = self.kp_base * confidence_factor
+        self.ki = self.ki_base * confidence_factor
+        self.kd = self.kd_base * confidence_factor
+
+    def compute_control(self, error, error_derivative, integral_error):
+        """Compute robust PID control"""
+        p_term = self.kp * error
+        i_term = self.ki * integral_error
+        d_term = self.kd * error_derivative
+
+        return p_term + i_term + d_term
+```
+
+## Adaptive and Learning-Based Approaches
+
+### Online Model Adaptation
+```python
+class OnlineModelAdapter:
+    def __init__(self, initial_model, learning_rate=0.01):
+        self.model = initial_model
+        self.learning_rate = learning_rate
+        self.model_params = initial_model.get_parameters()
+
+    def update_model(self, state, action, next_state, reward):
+        """Update model based on real-world experience"""
+        # Predict next state using current model
+        predicted_next_state = self.model.predict(state, action)
+
+        # Calculate prediction error
+        error = next_state - predicted_next_state
+
+        # Update model parameters using gradient descent
+        gradient = self.compute_model_gradient(state, action, error)
+        self.model_params -= self.learning_rate * gradient
+
+        # Apply updated parameters to model
+        self.model.set_parameters(self.model_params)
+
+        return error
+
+    def compute_model_gradient(self, state, action, error):
+        """Compute gradient of model parameters"""
+        # Implementation depends on model structure
+        pass
+```
+
+## Transfer Validation and Safety
+
+### Safety-Aware Transfer
+```python
+class SafeTransferValidator:
+    def __init__(self, simulation_policy, safety_threshold=0.1):
+        self.sim_policy = simulation_policy
+        self.safety_threshold = safety_threshold
+        self.safety_monitor = SafetyMonitor()
+
+    def validate_policy(self, robot_state):
+        """Validate policy safety before execution"""
+        # Simulate policy action in reduced-order model
+        sim_action = self.sim_policy.get_action(robot_state)
+
+        # Check safety constraints
+        safety_score = self.safety_monitor.evaluate_action(
+            robot_state, sim_action
+        )
+
+        # Only execute if safety score is above threshold
+        if safety_score > self.safety_threshold:
+            return sim_action
+        else:
+            # Return safe fallback action
+            return self.get_safe_fallback_action(robot_state)
+
+    def get_safe_fallback_action(self, state):
+        """Return conservative action when safety is at risk"""
+        # Example: return joint position home position
+        return np.zeros_like(state['joint_positions'])
+```
+
+## Best Practices for Sim-to-Real Transfer
+
+### Simulation Fidelity Optimization
+1. **Validate Simulation**: Ensure simulation accurately captures relevant dynamics
+2. **Identify Critical Parameters**: Focus randomization on parameters that most affect performance
+3. **Gradual Deployment**: Start with simple behaviors and increase complexity
+4. **Continuous Monitoring**: Monitor performance and adapt as needed
+
+### Hardware-in-the-Loop Testing
+```python
+class HardwareInLoopTester:
+    def __init__(self, sim_env, real_robot_interface):
+        self.sim_env = sim_env
+        self.real_robot = real_robot_interface
+
+    def run_hardware_loop_test(self, policy, num_episodes=100):
+        """Run tests alternating between simulation and real hardware"""
+        results = {'sim_performance': [], 'real_performance': []}
+
+        for episode in range(num_episodes):
+            # Test in simulation
+            sim_reward = self.test_in_simulation(policy)
+            results['sim_performance'].append(sim_reward)
+
+            # Test on real robot
+            real_reward = self.test_on_real_robot(policy)
+            results['real_performance'].append(real_reward)
+
+            # Compare and adjust if needed
+            if abs(sim_reward - real_reward) > self.acceptable_gap:
+                print(f"Performance gap detected at episode {episode}")
+                self.adapt_policy()
+
+        return results
+
+    def test_in_simulation(self, policy):
+        """Test policy in simulation"""
+        # Implementation
+        pass
+
+    def test_on_real_robot(self, policy):
+        """Test policy on real robot with safety measures"""
+        # Implementation with safety checks
+        pass
+
+    def adapt_policy(self):
+        """Adapt policy based on sim-to-real gap"""
+        # Implementation
+        pass
+```
+
+## Isaac Sim Tools for Transfer
+
+NVIDIA Isaac Sim provides specific tools for improving transfer:
+
+### PhysX vs. other physics engines
+- Use PhysX in simulation to match real-world physics characteristics
+- Validate contact models and friction parameters
+- Test with multiple physics engines to ensure robustness
+
+### USD Asset Accuracy
+- Create accurate USD models of real robots
+- Include sensor noise models
+- Validate kinematic and dynamic parameters
+
+## Cross-Module References
+
+For more information about related topics, see:
+- Module 2: Physics and Sensor Simulation for simulation environments
+- Module 3: Reinforcement Learning Control for policy development
+- Module 4: Vision-Language-Action (VLA) for perception-based transfer

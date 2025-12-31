@@ -1,0 +1,470 @@
+---
+id: urdf-robot-description
+title: URDF Robot Description for Humanoids
+---
+
+# URDF Robot Description for Humanoids
+
+Defining humanoid robot structures using URDF.
+
+## Unified Robot Description Format (URDF)
+
+URDF (Unified Robot Description Format) is an XML format used in ROS to describe robot models. It defines the physical and visual properties of a robot, including links, joints, and their relationships. URDF is fundamental to robot simulation, visualization, and control in ROS-based systems.
+
+## Key Components of URDF
+
+### Links
+Links represent rigid bodies in the robot. Each link contains:
+
+- **Visual**: How the link appears in visualization tools
+- **Collision**: Collision properties for physics simulation
+- **Inertial**: Mass, center of mass, and inertia tensor for dynamics
+
+### Joints
+Joints connect links and define their motion constraints. Joint types include:
+- `revolute`: Rotational joint with limits
+- `continuous`: Rotational joint without limits
+- `prismatic`: Linear sliding joint
+- `fixed`: No motion between links
+- `floating`: 6DOF motion (for base of floating robots)
+- `planar`: Motion on a plane
+
+## Complete Humanoid Robot URDF Example
+
+Here's a more complete URDF for a simple humanoid robot:
+
+```xml
+<?xml version="1.0"?>
+<robot name="simple_humanoid">
+  <!-- Base/Fixed link (torso) -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.3 0.2 0.5"/>
+      </geometry>
+      <origin xyz="0 0 0.25"/>
+      <material name="light_gray">
+        <color rgba="0.7 0.7 0.7 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.3 0.2 0.5"/>
+      </geometry>
+      <origin xyz="0 0 0.25"/>
+    </collision>
+    <inertial>
+      <mass value="10.0"/>
+      <origin xyz="0 0 0.25"/>
+      <inertia ixx="0.5" ixy="0.0" ixz="0.0" iyy="0.6" iyz="0.0" izz="0.2"/>
+    </inertial>
+  </link>
+
+  <!-- Head -->
+  <link name="head_link">
+    <visual>
+      <geometry>
+        <sphere radius="0.1"/>
+      </geometry>
+      <material name="white">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.004" ixy="0.0" ixz="0.0" iyy="0.004" iyz="0.0" izz="0.004"/>
+    </inertial>
+  </link>
+
+  <joint name="neck_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="head_link"/>
+    <origin xyz="0 0 0.55"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.785" upper="0.785" effort="10" velocity="3"/>
+  </joint>
+
+  <!-- Left Arm -->
+  <link name="left_shoulder_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.15" radius="0.05"/>
+      </geometry>
+      <origin xyz="0 0.15 0.35" rpy="1.57 0 0"/>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.15" radius="0.05"/>
+      </geometry>
+      <origin xyz="0 0.15 0.35" rpy="1.57 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.0005"/>
+    </inertial>
+  </link>
+
+  <joint name="left_shoulder_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="left_shoulder_link"/>
+    <origin xyz="0 0.15 0.35"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.57" upper="1.57" effort="20" velocity="3"/>
+  </joint>
+
+  <link name="left_elbow_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.25" radius="0.04"/>
+      </geometry>
+      <origin xyz="0 0.2 0" rpy="1.57 0 0"/>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.25" radius="0.04"/>
+      </geometry>
+      <origin xyz="0 0.2 0" rpy="1.57 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.4"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.0004"/>
+    </inertial>
+  </link>
+
+  <joint name="left_elbow_joint" type="revolute">
+    <parent link="left_shoulder_link"/>
+    <child link="left_elbow_link"/>
+    <origin xyz="0 0.2 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.356" upper="0" effort="15" velocity="3"/>
+  </joint>
+
+  <!-- Right Arm (similar to left, mirrored) -->
+  <link name="right_shoulder_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.15" radius="0.05"/>
+      </geometry>
+      <origin xyz="0 -0.15 0.35" rpy="1.57 0 0"/>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.15" radius="0.05"/>
+      </geometry>
+      <origin xyz="0 -0.15 0.35" rpy="1.57 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.0005"/>
+    </inertial>
+  </link>
+
+  <joint name="right_shoulder_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="right_shoulder_link"/>
+    <origin xyz="0 -0.15 0.35"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.57" upper="1.57" effort="20" velocity="3"/>
+  </joint>
+
+  <link name="right_elbow_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.25" radius="0.04"/>
+      </geometry>
+      <origin xyz="0 -0.2 0" rpy="1.57 0 0"/>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.25" radius="0.04"/>
+      </geometry>
+      <origin xyz="0 -0.2 0" rpy="1.57 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.4"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.0004"/>
+    </inertial>
+  </link>
+
+  <joint name="right_elbow_joint" type="revolute">
+    <parent link="right_shoulder_link"/>
+    <child link="right_elbow_link"/>
+    <origin xyz="0 -0.2 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="2.356" effort="15" velocity="3"/>
+  </joint>
+
+  <!-- Left Leg -->
+  <link name="left_hip_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.15" radius="0.06"/>
+      </geometry>
+      <origin xyz="0.08 0.08 0.15" rpy="1.57 0 0"/>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.15" radius="0.06"/>
+      </geometry>
+      <origin xyz="0.08 0.08 0.15" rpy="1.57 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.8"/>
+      <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.002" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="left_hip_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="left_hip_link"/>
+    <origin xyz="0.08 0.08 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="50" velocity="3"/>
+  </joint>
+
+  <link name="left_knee_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.3" radius="0.05"/>
+      </geometry>
+      <origin xyz="0 0 -0.15" rpy="1.57 0 0"/>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.3" radius="0.05"/>
+      </geometry>
+      <origin xyz="0 0 -0.15" rpy="1.57 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.7"/>
+      <inertia ixx="0.003" ixy="0.0" ixz="0.0" iyy="0.003" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="left_knee_joint" type="revolute">
+    <parent link="left_hip_link"/>
+    <child link="left_knee_link"/>
+    <origin xyz="0 0 -0.15"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="2.356" effort="50" velocity="3"/>
+  </joint>
+
+  <link name="left_ankle_link">
+    <visual>
+      <geometry>
+        <box size="0.15 0.08 0.05"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0.1 0.1 0.1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.15 0.08 0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.3"/>
+      <inertia ixx="0.0005" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="left_ankle_joint" type="revolute">
+    <parent link="left_knee_link"/>
+    <child link="left_ankle_link"/>
+    <origin xyz="0 0 -0.3"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.785" upper="0.785" effort="30" velocity="2"/>
+  </joint>
+
+  <!-- Right Leg (similar to left, mirrored) -->
+  <link name="right_hip_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.15" radius="0.06"/>
+      </geometry>
+      <origin xyz="0.08 -0.08 0.15" rpy="1.57 0 0"/>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.15" radius="0.06"/>
+      </geometry>
+      <origin xyz="0.08 -0.08 0.15" rpy="1.57 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.8"/>
+      <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.002" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="right_hip_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="right_hip_link"/>
+    <origin xyz="0.08 -0.08 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57" effort="50" velocity="3"/>
+  </joint>
+
+  <link name="right_knee_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.3" radius="0.05"/>
+      </geometry>
+      <origin xyz="0 0 -0.15" rpy="1.57 0 0"/>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.3" radius="0.05"/>
+      </geometry>
+      <origin xyz="0 0 -0.15" rpy="1.57 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="0.7"/>
+      <inertia ixx="0.003" ixy="0.0" ixz="0.0" iyy="0.003" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="right_knee_joint" type="revolute">
+    <parent link="right_hip_link"/>
+    <child link="right_knee_link"/>
+    <origin xyz="0 0 -0.15"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="2.356" effort="50" velocity="3"/>
+  </joint>
+
+  <link name="right_ankle_link">
+    <visual>
+      <geometry>
+        <box size="0.15 0.08 0.05"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0.1 0.1 0.1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.15 0.08 0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.3"/>
+      <inertia ixx="0.0005" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="right_ankle_joint" type="revolute">
+    <parent link="right_knee_link"/>
+    <child link="right_ankle_link"/>
+    <origin xyz="0 0 -0.3"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.785" upper="0.785" effort="30" velocity="2"/>
+  </joint>
+</robot>
+```
+
+## Xacro for Complex URDFs
+
+For more complex humanoid robots, Xacro (XML Macros) helps manage large URDF files:
+
+```xml
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="humanoid_xacro">
+
+  <!-- Define properties -->
+  <xacro:property name="M_PI" value="3.1415926535897931" />
+  <xacro:property name="base_mass" value="10.0" />
+  <xacro:property name="link_radius" value="0.05" />
+
+  <!-- Macro for a simple leg -->
+  <xacro:macro name="leg" params="prefix reflect">
+    <link name="${prefix}_hip_link">
+      <visual>
+        <geometry>
+          <cylinder length="0.15" radius="${link_radius}"/>
+        </geometry>
+        <origin xyz="0 ${reflect*0.08} 0.15" rpy="${M_PI/2} 0 0"/>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder length="0.15" radius="${link_radius}"/>
+        </geometry>
+        <origin xyz="0 ${reflect*0.08} 0.15" rpy="${M_PI/2} 0 0"/>
+      </collision>
+      <inertial>
+        <mass value="0.8"/>
+        <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.002" iyz="0.0" izz="0.001"/>
+      </inertial>
+    </link>
+
+    <!-- Additional leg links would follow the same pattern -->
+  </xacro:macro>
+
+  <!-- Use the macro to create legs -->
+  <xacro:leg prefix="left" reflect="1" />
+  <xacro:leg prefix="right" reflect="-1" />
+</robot>
+```
+
+## URDF in Simulation and Control
+
+URDF files are used by various ROS tools:
+- **Gazebo**: For physics simulation
+- **RViz**: For visualization
+- **MoveIt**: For motion planning
+- **ros2_control**: For hardware control
+
+## Best Practices for Humanoid URDFs
+
+1. **Use proper inertial values**: Accurate inertial properties are crucial for stable simulation
+2. **Define appropriate joint limits**: Prevent damage to real hardware
+3. **Include transmission elements**: For proper hardware control
+4. **Use consistent naming**: Follow ROS conventions for joint/link names
+5. **Validate URDF**: Use tools like `check_urdf` to verify syntax
+
+## Cross-Module References
+
+For more information about related topics, see:
+- Module 1: ROS 2 Architecture for Humanoids for communication patterns
+- Module 1: ROS 2 Nodes, Topics, and Services for messaging systems
+- Module 1: Bridging Python Agents with RCLPY for ROS integration
+- Module 2: Gazebo Simulation Setup for simulation integration
+- Module 2: URDF and SDF Formats for model integration
+- Module 2: Physics and Sensor Simulation for environment modeling
+- Module 2: Unity Visualization Setup for advanced rendering
+- Module 3: Isaac SDK and Sim Overview for advanced simulation platforms
+- Module 3: Perception and Manipulation for object interaction
+- Module 3: Reinforcement Learning Control for adaptive behavior
+- Module 3: Sim-to-Real Transfer for deployment considerations
+- Module 4: GPT Integration for Conversational AI
+- Module 4: Speech Recognition with Whisper for voice processing
+- Module 4: Cognitive Planning for LLM-to-ROS translation
+- Module 4: Capstone Project: Autonomous Humanoid for complete system integration

@@ -1,0 +1,153 @@
+---
+id: physics-sensor-simulation
+title: Physics and Sensor Simulation
+---
+
+# Physics and Sensor Simulation
+
+Simulating physical interactions and sensor data for digital twins.
+
+## Physics Simulation in Digital Twins
+
+Physics simulation is crucial for creating accurate digital twins of humanoid robots. It allows for testing control algorithms, motion planning, and interaction strategies in a safe, virtual environment before deployment on physical hardware.
+
+### Key Physics Concepts in Gazebo
+
+1. **Collision Detection**: Algorithms that determine when objects make contact
+2. **Contact Response**: How objects react when they collide
+3. **Rigid Body Dynamics**: Motion of non-deformable objects under applied forces
+4. **Joint Constraints**: Mathematical representations of physical joints
+
+### Physics Engine Configuration
+
+Gazebo supports multiple physics engines including ODE, Bullet, and DART. Each has its own strengths:
+
+- **ODE (Open Dynamics Engine)**: Good for general-purpose simulation, widely used
+- **Bullet**: Better for complex contact scenarios and soft body simulation
+- **DART**: Advanced for articulated body simulation
+
+## Sensor Simulation
+
+Accurate sensor simulation is essential for developing perception algorithms that can transfer from simulation to reality.
+
+### Simulated Sensor Specifications
+
+| Sensor Type | Model | Range | Resolution | Accuracy | Update Rate | Purpose |
+|-------------|-------|-------|------------|----------|-------------|---------|
+| **LiDAR** | Hokuyo UTM-30LX | 30m | 0.25° angular | ±20mm | 40Hz | Environment mapping, navigation |
+| **Depth Camera** | Intel RealSense D435 | 0.2-10m | 1280×720 | ±2% distance | 30Hz | 3D reconstruction, object detection |
+| **RGB Camera** | Basler acA1920-40uc | N/A | 1920×1200 | Color accurate | 30-60Hz | Visual perception, object recognition |
+| **IMU** | Bosch BNO055 | N/A | 3-axis | 0.5° orientation | 100Hz | Balance, orientation, motion |
+| **Force/Torque** | ATI Gamma SI-200 | ±200N/20Nm | 16-bit | 0.03% of range | 1kHz | Manipulation, contact sensing |
+| **Joint Encoders** | Absolute | N/A | 12-16 bit | &lt;0.1° | 1kHz | Joint position feedback |
+
+## Implementing Sensors in Gazebo
+
+### Depth Camera Example
+
+Here's an example of how to define a depth camera sensor in SDF:
+
+```xml
+<sensor name="depth_camera" type="depth">
+  <always_on>true</always_on>
+  <update_rate>30</update_rate>
+  <camera>
+    <horizontal_fov>1.047</horizontal_fov> <!-- 60 degrees -->
+    <image>
+      <width>640</width>
+      <height>480</height>
+      <format>R8G8B8</format>
+    </image>
+    <clip>
+      <near>0.1</near>
+      <far>10.0</far>
+    </clip>
+  </camera>
+  <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+    <frame_name>camera_link</frame_name>
+    <min_depth>0.1</min_depth>
+    <max_depth>10.0</max_depth>
+  </plugin>
+</sensor>
+```
+
+### IMU Sensor Example
+
+```xml
+<sensor name="imu_sensor" type="imu">
+  <always_on>true</always_on>
+  <update_rate>100</update_rate>
+  <imu>
+    <angular_velocity>
+      <x>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.001</stddev>
+        </noise>
+      </x>
+      <y>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.001</stddev>
+        </noise>
+      </y>
+      <z>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.001</stddev>
+        </noise>
+      </z>
+    </angular_velocity>
+    <linear_acceleration>
+      <x>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.017</stddev>
+        </noise>
+      </x>
+      <y>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.017</stddev>
+        </noise>
+      </y>
+      <z>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.017</stddev>
+        </noise>
+      </z>
+    </linear_acceleration>
+  </imu>
+</sensor>
+```
+
+## Physics Parameters for Humanoid Robots
+
+When simulating humanoid robots, special attention must be paid to physics parameters to ensure stable simulation:
+
+### Contact Parameters
+- **Friction**: Critical for stable walking, typically 0.5-1.0 for rubber feet on ground
+- **Restitution**: How bouncy contacts are, usually kept low (0.0-0.2) for humanoid feet
+- **Contact Stiffness and Damping**: Affects how objects respond to contact forces
+
+### Simulation Stability
+- **Time Step**: Smaller time steps (e.g., 0.001s) improve accuracy but require more computation
+- **Real-time Factor**: Target ratio of simulation speed to real-time (1.0 = real-time)
+- **Solver Iterations**: More iterations improve accuracy but reduce performance
+
+## Sim-to-Real Transfer Considerations
+
+To maximize the effectiveness of simulation for real-world deployment:
+
+1. **Domain Randomization**: Introduce variations in simulation parameters to improve robustness
+2. **Sensor Noise Modeling**: Include realistic noise models for sensor data
+3. **Actuator Dynamics**: Model motor dynamics, delays, and limitations
+4. **Uncertainty Modeling**: Account for modeling errors and environmental variations
+
+## Cross-Module References
+
+For more information about related topics, see:
+- Module 2: Gazebo Simulation Setup for environment configuration
+- Module 3: The AI-Robot Brain (NVIDIA Isaac™) for simulation-based learning
+- Module 4: Vision-Language-Action (VLA) for sensor data processing

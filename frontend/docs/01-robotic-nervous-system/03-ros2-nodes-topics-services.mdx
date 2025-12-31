@@ -1,0 +1,213 @@
+---
+id: ros2-nodes-topics-services
+title: ROS 2 Nodes, Topics, and Services
+---
+
+# ROS 2 Nodes, Topics, and Services
+
+Understanding the core communication mechanisms in ROS 2.
+
+## Nodes in ROS 2
+
+Nodes are the fundamental building blocks of a ROS 2 system. They are processes that perform computation and communicate with other nodes through topics, services, actions, and parameters.
+
+### Node Characteristics:
+- Each node runs independently
+- Nodes can be written in different programming languages (C++, Python, etc.)
+- Nodes must be part of a single or multiple graphs
+- Nodes handle their own lifecycle (creation, execution, destruction)
+
+## Topics and Publishers/Subscribers
+
+Topics enable asynchronous, many-to-many communication between nodes using a publish/subscribe pattern.
+
+### Publisher Example:
+```python
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class HumanoidCommandPublisher(Node):
+    def __init__(self):
+        super().__init__('humanoid_command_publisher')
+        self.publisher_ = self.create_publisher(String, 'humanoid_commands', 10)
+        timer_period = 0.5  # seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.i = 0
+
+    def timer_callback(self):
+        msg = String()
+        msg.data = f'Command: walk_forward {self.i}'
+        self.publisher_.publish(msg)
+        self.get_logger().info(f'Publishing: "{msg.data}"')
+        self.i += 1
+
+def main(args=None):
+    rclpy.init(args=args)
+    humanoid_command_publisher = HumanoidCommandPublisher()
+
+    try:
+        rclpy.spin(humanoid_command_publisher)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        humanoid_command_publisher.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Subscriber Example:
+```python
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class HumanoidCommandSubscriber(Node):
+    def __init__(self):
+        super().__init__('humanoid_command_subscriber')
+        self.subscription = self.create_subscription(
+            String,
+            'humanoid_commands',
+            self.listener_callback,
+            10)
+        self.subscription  # prevent unused variable warning
+
+    def listener_callback(self, msg):
+        self.get_logger().info(f'I heard: "{msg.data}"')
+
+def main(args=None):
+    rclpy.init(args=args)
+    humanoid_command_subscriber = HumanoidCommandSubscriber()
+
+    try:
+        rclpy.spin(humanoid_command_subscriber)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        humanoid_command_subscriber.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Services
+
+Services provide synchronous request/response communication between nodes.
+
+### Service Server Example:
+```python
+from example_interfaces.srv import AddTwoInts
+import rclpy
+from rclpy.node import Node
+
+class MinimalService(Node):
+    def __init__(self):
+        super().__init__('minimal_service')
+        self.srv = self.create_service(AddTwoInts, 'add_two_ints', self.add_two_ints_callback)
+
+    def add_two_ints_callback(self, request, response):
+        response.sum = request.a + request.b
+        self.get_logger().info(f'Returning {request.a} + {request.b} = {response.sum}')
+        return response
+
+def main(args=None):
+    rclpy.init(args=args)
+    minimal_service = MinimalService()
+
+    try:
+        rclpy.spin(minimal_service)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        minimal_service.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Service Client Example:
+```python
+from example_interfaces.srv import AddTwoInts
+import rclpy
+from rclpy.node import Node
+
+class MinimalClient(Node):
+    def __init__(self):
+        super().__init__('minimal_client')
+        self.cli = self.create_client(AddTwoInts, 'add_two_ints')
+        while not self.cli.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Service not available, waiting again...')
+        self.req = AddTwoInts.Request()
+
+    def send_request(self, a, b):
+        self.req.a = a
+        self.req.b = b
+        self.future = self.cli.call_async(self.req)
+        rclpy.spin_until_future_complete(self, self.future)
+        return self.future.result()
+
+def main(args=None):
+    rclpy.init(args=args)
+    minimal_client = MinimalClient()
+    response = minimal_client.send_request(1, 2)
+    minimal_client.get_logger().info(f'Result of add_two_ints: {response.sum}')
+    minimal_client.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Quality of Service (QoS) in Humanoid Robotics
+
+When designing communication for humanoid robots, QoS settings are crucial for reliable operation:
+
+```python
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy
+
+# For critical control commands
+control_qos = QoSProfile(
+    depth=10,
+    durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+    reliability=QoSReliabilityPolicy.RELIABLE
+)
+
+# For sensor data (e.g., IMU, camera feeds)
+sensor_qos = QoSProfile(
+    depth=5,
+    durability=QoSDurabilityPolicy.VOLATILE,
+    reliability=QoSReliabilityPolicy.BEST_EFFORT
+)
+```
+
+## Communication Patterns in Humanoid Robots
+
+Humanoid robots typically use these communication patterns:
+
+1. **Joint Control**: Publishers sending commands to joint controllers via topics
+2. **Sensor Feedback**: Publishers broadcasting sensor readings (IMU, encoders, cameras)
+3. **High-level Commands**: Services for specific actions like "walk_to_location" or "grasp_object"
+4. **Behavior Coordination**: Actions for complex, goal-oriented behaviors with feedback
+
+## Cross-Module References
+
+For more information about related topics, see:
+- Module 1: ROS 2 Architecture for Humanoids for communication patterns
+- Module 1: Bridging Python Agents with RCLPY for Python integration
+- Module 1: URDF Robot Description for Humanoids for robot modeling
+- Module 2: Gazebo Simulation Setup for simulation integration
+- Module 2: URDF and SDF Formats for model integration
+- Module 2: Physics and Sensor Simulation for environment modeling
+- Module 2: Unity Visualization Setup for advanced rendering
+- Module 3: Isaac SDK and Sim Overview for advanced simulation platforms
+- Module 3: Perception and Manipulation for object interaction
+- Module 3: Reinforcement Learning Control for adaptive behavior
+- Module 3: Sim-to-Real Transfer for deployment considerations
+- Module 4: GPT Integration for Conversational AI
+- Module 4: Speech Recognition with Whisper for voice processing
+- Module 4: Cognitive Planning for LLM-to-ROS translation
+- Module 4: Capstone Project: Autonomous Humanoid for complete system integration

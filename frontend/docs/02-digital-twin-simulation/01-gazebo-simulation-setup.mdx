@@ -1,0 +1,251 @@
+---
+id: gazebo-simulation-setup
+title: Gazebo Simulation Setup
+---
+
+# Gazebo Simulation Setup
+
+Setting up realistic physics simulations with Gazebo.
+
+## Introduction to Gazebo Simulation
+
+Gazebo is a powerful 3D simulation environment that provides realistic physics simulation, high-quality graphics, and convenient programmatic interfaces. For humanoid robotics, Gazebo serves as the primary simulation platform where control algorithms, perception systems, and interaction strategies can be developed and tested safely.
+
+## Installing and Configuring Gazebo
+
+### Installation
+Gazebo can be installed as part of the ROS 2 ecosystem:
+
+```bash
+# For Ubuntu with ROS 2 Humble Hawksbill
+sudo apt update
+sudo apt install ros-humble-gazebo-ros-pkgs ros-humble-gazebo-plugins ros-humble-gazebo-dev
+```
+
+### Basic Launch
+To start Gazebo with ROS 2 integration:
+
+```bash
+# Launch Gazebo with an empty world
+ros2 launch gazebo_ros empty_world.launch.py
+
+# Or launch with a specific world file
+ros2 launch gazebo_ros gazebo.launch.py world:=/path/to/your/world.sdf
+```
+
+## World File Configuration
+
+A complete Gazebo world file defines the environment, physics properties, lighting, and initial objects:
+
+```xml
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="humanoid_lab">
+    <!-- Physics configuration -->
+    <physics type="ode">
+      <gravity>0 0 -9.8</gravity>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000.0</real_time_update_rate>
+    </physics>
+
+    <!-- Include a model from Gazebo Model Database -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- Custom humanoid robot -->
+    <include>
+      <uri>model://simple_humanoid</uri>
+      <pose>0 0 1 0 0 0</pose>
+    </include>
+
+    <!-- Custom objects -->
+    <model name="table">
+      <pose>2 0 0 0 0 0</pose>
+      <link name="link">
+        <pose>0 0 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1 0.8 1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1 0.8 1</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.6 0.2 1</ambient>
+            <diffuse>0.8 0.6 0.2 1</diffuse>
+          </material>
+        </visual>
+        <inertial>
+          <mass>10</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
+
+    <!-- Lighting -->
+    <light name="key_light" type="directional">
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>100</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.3 0.3 -0.9</direction>
+    </light>
+  </world>
+</sdf>
+```
+
+## Launch Files for Simulation
+
+Create a launch file to easily start your simulation environment:
+
+```python
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    # Launch configuration
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+
+    # Get package directories
+    pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
+    pkg_humanoid_sim = get_package_share_directory('humanoid_simulation')
+
+    # Launch Gazebo
+    gazebo = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(pkg_gazebo_ros, 'launch', 'gazebo.launch.py'),
+        )
+    )
+
+    # Spawn robot in Gazebo
+    spawn_entity = Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        arguments=[
+            '-topic', 'robot_description',
+            '-entity', 'humanoid_robot',
+            '-x', '0.0',
+            '-y', '0.0',
+            '-z', '1.0'
+        ],
+        output='screen'
+    )
+
+    return LaunchDescription([
+        gazebo,
+        spawn_entity,
+    ])
+```
+
+## Robot Simulation Configuration
+
+For a humanoid robot to work properly in Gazebo, you need to add Gazebo-specific tags to your URDF:
+
+```xml
+<!-- In your robot URDF -->
+<robot name="simple_humanoid">
+  <!-- ... your links and joints ... -->
+
+  <!-- Gazebo plugins for ROS control -->
+  <gazebo>
+    <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+      <parameters>$(find my_robot_description)/config/my_robot_controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+  <!-- Joint state publisher -->
+  <gazebo>
+    <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+      <robotNamespace>/</robotNamespace>
+      <jointName>joint_name</jointName>
+    </plugin>
+  </gazebo>
+</robot>
+```
+
+## Controller Configuration
+
+Create a controller configuration file (YAML) for ros2_control:
+
+```yaml
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    left_leg_controller:
+      type: position_controllers/JointGroupPositionController
+
+    right_leg_controller:
+      type: position_controllers/JointGroupPositionController
+
+left_leg_controller:
+  ros__parameters:
+    joints:
+      - left_hip_joint
+      - left_knee_joint
+      - left_ankle_joint
+
+right_leg_controller:
+  ros__parameters:
+    joints:
+      - right_hip_joint
+      - right_knee_joint
+      - right_ankle_joint
+```
+
+## Best Practices for Humanoid Simulation
+
+1. **Physics Tuning**: Start with conservative physics parameters and adjust for stability
+2. **Real-time Performance**: Aim for at least 0.9 real-time factor for interactive development
+3. **Model Complexity**: Balance visual fidelity with simulation performance
+4. **Sensor Simulation**: Include realistic noise models for better sim-to-real transfer
+5. **Environment Design**: Create diverse environments to test robustness
+
+## Debugging Simulation Issues
+
+Common simulation problems and solutions:
+
+- **Jittery movement**: Increase physics solver iterations or reduce time step
+- **Robot falls through ground**: Check collision geometries and surface properties
+- **Unstable joints**: Verify joint limits and transmission configurations
+- **Poor real-time performance**: Simplify collision meshes or reduce update rates
+
+## Cross-Module References
+
+For more information about related topics, see:
+- Module 1: ROS 2 Architecture for Humanoids for ROS integration
+- Module 2: URDF and SDF Formats for model description
+- Module 3: The AI-Robot Brain (NVIDIA Isaac™) for advanced simulation
+- Module 4: Vision-Language-Action (VLA) for perception integration
